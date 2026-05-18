@@ -319,66 +319,29 @@ function parseSheetFat(json){
 
 function parseSheetCom(json){
   const table=json.table;
-  const semanas=['Sem 1','Sem 2','Sem 3','Sem 4'];
-  const mKeys=['agend','reunioes','noshow','vendas'];
-  const vendedores=[];
+  const semanas=["Sem 1","Sem 2","Sem 3","Sem 4"];
+  const mKeys=["agend","reunioes","noshow","vendas"];
+  const vendedores=VENDEDOR_META.map(m=>({
+    nome:m.nome,iniciais:m.iniciais,cor:m.cor,bg:m.bg,
+    semanas:[{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]
+  }));
   let vi=-1;
-
-  // O Sheets trata linha 1 como header — o nome da primeira vendedora
-  // aparece em cols[0].label junto com "Métrica" (ex: "Beatriz Roveri Métrica")
-  // As demais vendedoras aparecem normalmente nas rows
-  const allRows=[];
-
-  // Extrai primeira vendedora do header
-  const headerLabel = (table.cols&&table.cols[0]&&table.cols[0].label)||'';
-  const primeiraVendedora = VENDEDOR_META.find(m=>
-    m.nome.toLowerCase().split(' ').some(p=>p.length>3&&headerLabel.toLowerCase().includes(p))
-  );
-  if(primeiraVendedora){
-    vendedores.push({...primeiraVendedora, semanas:[
-      {agend:0,reunioes:0,noshow:0,vendas:0},
-      {agend:0,reunioes:0,noshow:0,vendas:0},
-      {agend:0,reunioes:0,noshow:0,vendas:0},
-      {agend:0,reunioes:0,noshow:0,vendas:0}
-    ]});
-    vi=0;
-  }
-
+  const headerLabel=String((table.cols&&table.cols[0]&&table.cols[0].label)||"");
+  const idxHeader=VENDEDOR_META.findIndex(m=>m.nome.toLowerCase().split(" ").some(p=>p.length>3&&headerLabel.toLowerCase().includes(p)));
+  if(idxHeader>=0) vi=idxHeader;
   for(const row of (table.rows||[])){
     if(!row.c||!row.c[0]) continue;
-    const val=String(row.c[0].v||'').trim();
+    const val=String(row.c[0].v!=null?row.c[0].v:"").trim();
     if(!val) continue;
-
-    // Verifica se é linha de nome de vendedora
-    const meta=VENDEDOR_META.find(m=>
-      m.nome.toLowerCase().split(' ').some(p=>p.length>3&&val.toLowerCase().includes(p))
-    );
-    if(meta && meta!==primeiraVendedora){
-      vendedores.push({...meta, semanas:[
-        {agend:0,reunioes:0,noshow:0,vendas:0},
-        {agend:0,reunioes:0,noshow:0,vendas:0},
-        {agend:0,reunioes:0,noshow:0,vendas:0},
-        {agend:0,reunioes:0,noshow:0,vendas:0}
-      ]});
-      vi=vendedores.length-1;
-      continue;
-    }
-
+    const idxV=VENDEDOR_META.findIndex(m=>m.nome.toLowerCase().split(" ").some(p=>p.length>3&&val.toLowerCase().includes(p)));
+    if(idxV>=0){vi=idxV;continue;}
     if(vi<0) continue;
     const vl=val.toLowerCase();
-    const mIdx=mKeys.findIndex(k=>
-      (k==='agend'&&vl.includes('agend'))||
-      (k==='reunioes'&&vl.includes('reuni'))||
-      (k==='noshow'&&(vl.includes('no-show')||vl.includes('noshow')))||
-      (k==='vendas'&&vl.includes('venda'))
-    );
+    const mIdx=mKeys.findIndex(k=>(k==="agend"&&vl.includes("agend"))||(k==="reunioes"&&vl.includes("reuni"))||(k==="noshow"&&(vl.includes("no-show")||vl.includes("noshow")))||(k==="vendas"&&vl.includes("venda")));
     if(mIdx<0) continue;
-    for(let s=0;s<4;s++){
-      const c=row.c[s+1];
-      vendedores[vi].semanas[s][mKeys[mIdx]]=c&&c.v!=null?Number(c.v)||0:0;
-    }
+    for(let s=0;s<4;s++){const c=row.c[s+1];vendedores[vi].semanas[s][mKeys[mIdx]]=c&&c.v!=null?Number(c.v)||0:0;}
   }
-  return vendedores.length?{semanas,vendedores}:getDemoCom();
+  return {semanas,vendedores};
 }
 
 /* ── DEMO DATA ──────────────────────────────────── */
