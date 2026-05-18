@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Comercial — Seventech</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080f;
+  --surface:#0e0f1c;
+  --surface2:#161728;
+  --surface3:#1e2035;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --text:#eeeef8;
+  --muted:rgba(238,238,248,0.5);
+  --dim:rgba(238,238,248,0.25);
+  --accent:#7c6aff;
+  --accent-dim:rgba(124,106,255,0.14);
+  --teal:#00d4aa;
+  --teal-dim:rgba(0,212,170,0.12);
+  --amber:#ffb830;
+  --amber-dim:rgba(255,184,48,0.12);
+  --red:#ff5b5b;
+  --red-dim:rgba(255,91,91,0.1);
+  --green:#22d47c;
+  --green-dim:rgba(34,212,124,0.1);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;font-size:14px;line-height:1.5;overflow-x:hidden}
+
+/* ── SIDEBAR ── */
+.sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0;z-index:100}
+.sidebar-logo{padding:0 20px 28px;border-bottom:1px solid var(--border)}
+.logo-mark{width:36px;height:36px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:#fff;margin-bottom:12px}
+.logo-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;color:var(--text)}
+.logo-sub{font-size:11px;color:var(--dim);margin-top:1px}
+.nav{padding:16px 12px;flex:1;display:flex;flex-direction:column;gap:4px}
+.nav-section{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--dim);padding:10px 8px 6px}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;border:none;background:transparent;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;text-align:left;width:100%;transition:background 0.15s,color 0.15s}
+.nav-btn:hover{background:var(--surface2);color:var(--text)}
+.nav-btn.active{background:var(--accent-dim);color:var(--accent)}
+.nav-btn.active .nav-dot{background:var(--accent)}
+.nav-dot{width:7px;height:7px;border-radius:50%;background:var(--border2);flex-shrink:0;transition:background 0.15s}
+.nav-btn[data-page="Nicole"].active{background:var(--teal-dim);color:var(--teal)}
+.nav-btn[data-page="Nicole"].active .nav-dot{background:var(--teal)}
+.nav-btn[data-page="Rayanne"].active{background:var(--amber-dim);color:var(--amber)}
+.nav-btn[data-page="Rayanne"].active .nav-dot{background:var(--amber)}
+.nav-btn[data-page="faturamento"].active{background:rgba(34,212,124,0.1);color:var(--green)}
+.nav-btn[data-page="faturamento"].active .nav-dot{background:var(--green)}
+.nav-btn[data-page="time"].active{background:var(--surface3);color:var(--text)}
+.nav-btn[data-page="time"].active .nav-dot{background:var(--muted)}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.refresh-btn{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;padding:8px 12px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background 0.2s,color 0.2s}
+.refresh-btn:hover{background:var(--surface3);color:var(--text)}
+.last-update{font-size:10px;color:var(--dim);text-align:center;margin-top:8px}
+
+/* ── MAIN ── */
+.main{margin-left:220px;min-height:100vh;padding:32px 36px}
+
+/* ── PAGES ── */
+.page{display:none}
+.page.active{display:block}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:28px}
+.page-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--text);margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--muted)}
+
+/* ── KPI CARDS ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px}
+.kpi-label{font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
+.kpi-val{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1;margin-bottom:4px}
+.kpi-sub{font-size:12px;color:var(--muted)}
+
+/* ── FAT TABLE ── */
+.fat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+.fat-thead{display:grid;grid-template-columns:1fr 160px 160px 100px;gap:0;background:var(--surface2);padding:11px 20px;border-bottom:1px solid var(--border)}
+.fat-thead span{font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--dim)}
+.fat-thead span:not(:first-child){text-align:right}
+.fat-row{display:grid;grid-template-columns:1fr 160px 160px 100px;gap:0;padding:13px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background 0.12s}
+.fat-row:last-child{border-bottom:none}
+.fat-row:hover{background:var(--surface2)}
+.fat-name{font-size:13px;color:var(--text)}
+.fat-acum{text-align:right;font-family:'Syne',sans-serif;font-size:14px;font-weight:700}
+.fat-meta{text-align:right;font-size:12px;color:var(--muted)}
+.fat-pct-cell{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+.fat-pct{font-size:12px;font-weight:600;font-family:'Syne',sans-serif}
+.bar-bg{width:70px;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
+.bar-fill{height:100%;border-radius:2px}
+.fat-total{display:grid;grid-template-columns:1fr 160px 160px 100px;padding:14px 20px;background:var(--surface2);border-top:2px solid var(--border2)}
+.fat-total span{font-family:'Syne',sans-serif;font-size:13px;font-weight:700}
+.fat-total span:not(:first-child){text-align:right}
+
+/* ── SELLER SECTIONS (time page) ── */
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-bottom:28px}
+.team-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color 0.2s,transform 0.15s}
+.team-card:hover{transform:translateY(-2px)}
+.team-card-header{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:14px;flex-shrink:0}
+.seller-name-big{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.badge{margin-left:auto;font-size:10px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:0.03em}
+.team-metrics{display:grid;grid-template-columns:repeat(4,1fr)}
+.tm-cell{padding:14px 10px;text-align:center;border-right:1px solid var(--border)}
+.tm-cell:last-child{border-right:none}
+.tm-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
+.tm-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+
+/* ── SELLER INDIVIDUAL PAGE ── */
+.seller-hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 32px;margin-bottom:24px;display:flex;align-items:center;gap:20px}
+.hero-avatar{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;flex-shrink:0}
+.hero-name{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:3px}
+.hero-sub{font-size:13px;color:var(--muted)}
+.hero-badges{margin-left:auto;display:flex;gap:10px}
+.hero-badge{font-size:12px;font-weight:600;padding:6px 16px;border-radius:24px}
+
+/* ── WEEKS TABLE ── */
+.weeks-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:24px}
+.weeks-thead{display:grid;gap:0;background:var(--surface2);padding:11px 20px;border-bottom:1px solid var(--border)}
+.weeks-row{display:grid;gap:0;padding:13px 20px;border-bottom:1px solid var(--border);align-items:center}
+.weeks-row:last-child{border-bottom:none}
+.weeks-row:hover{background:var(--surface2)}
+.cell-label{font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--dim)}
+.cell-val{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;text-align:center}
+.cell-name{font-size:13px;color:var(--text)}
+
+/* ── LOADING ── */
+#loading-screen{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
+.spinner{width:32px;height:32px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-size:13px;color:var(--muted)}
+
+/* ── ERROR ── */
+.error-bar{background:var(--red-dim);border:1px solid rgba(255,91,91,0.25);border-radius:10px;padding:12px 16px;color:var(--red);font-size:12px;margin-bottom:20px;display:none}
+
+/* ── COLORS ── */
+.c-accent{color:var(--accent)}
+.c-teal{color:var(--teal)}
+.c-amber{color:var(--amber)}
+.c-red{color:var(--red)}
+.c-green{color:var(--green)}
+.c-muted{color:var(--muted)}
+.c-dim{color:var(--dim)}
+
+/* ── STATUS ── */
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2.5s infinite;margin-right:6px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="spinner"></div>
+  <span class="loading-text">Carregando dados...</span>
+</div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">7T</div>
+    <div class="logo-name">Seventech</div>
+    <div class="logo-sub">Dashboard Comercial</div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Visão geral</div>
+    <button class="nav-btn active" data-page="faturamento" onclick="goTo('faturamento')">
+      <span class="nav-dot"></span>Faturamento
+    </button>
+    <button class="nav-btn" data-page="time" onclick="goTo('time')">
+      <span class="nav-dot"></span>Resultado do time
+    </button>
+    <div class="nav-section">Vendedoras</div>
+    <button class="nav-btn" data-page="Beatriz Roveri" onclick="goTo('Beatriz Roveri')">
+      <span class="nav-dot"></span>Beatriz Roveri
+    </button>
+    <button class="nav-btn" data-page="Nicole" onclick="goTo('Nicole')">
+      <span class="nav-dot"></span>Nicole
+    </button>
+    <button class="nav-btn" data-page="Rayanne" onclick="goTo('Rayanne')">
+      <span class="nav-dot"></span>Rayanne
+    </button>
+  </div>
+  <div class="sidebar-footer">
+    <button class="refresh-btn" onclick="loadData()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+      Atualizar dados
+    </button>
+    <div class="last-update" id="last-update"><span class="status-dot"></span>Aguardando...</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="error-bar" id="error-bar"></div>
+
+  <!-- PAGE: FATURAMENTO -->
+  <div class="page active" id="page-faturamento">
+    <div class="page-header">
+      <div class="page-title">Faturamento</div>
+      <div class="page-sub">Acumulado mensal por produto</div>
+    </div>
+    <div class="kpi-grid" id="fat-kpis"></div>
+    <div class="fat-card">
+      <div class="fat-thead">
+        <span>Produto</span><span>Acumulado</span><span>Meta mês</span><span>% da meta</span>
+      </div>
+      <div id="fat-rows"></div>
+      <div class="fat-total" id="fat-total"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: TIME -->
+  <div class="page" id="page-time">
+    <div class="page-header">
+      <div class="page-title">Resultado do time</div>
+      <div class="page-sub">Consolidado de todas as vendedoras no mês</div>
+    </div>
+    <div class="kpi-grid" id="time-kpis"></div>
+    <div class="team-grid" id="team-cards"></div>
+    <div id="time-weeks-wrap"></div>
+  </div>
+
+  <!-- PAGES: VENDEDORAS (geradas dinamicamente) -->
+  <div id="seller-pages"></div>
+
+</main>
+
+<script>
+const SHEET_ID  = '14QEyW0ZuLErufQauy9K7pPA6k4l3EM8Wl7rOOiJK6Qs';
+const FAT_SHEET = 'Faturamento novo';
+const COM_SHEET = 'Maio26';
+
+const VENDEDOR_META = [
+  { nome:'Beatriz Roveri', iniciais:'BR', cor:'#7c6aff', bg:'rgba(124,106,255,0.15)' },
+  { nome:'Nicole',         iniciais:'NI', cor:'#00d4aa', bg:'rgba(0,212,170,0.13)'  },
+  { nome:'Rayanne',        iniciais:'RA', cor:'#ffb830', bg:'rgba(255,184,48,0.13)' },
+];
+
+let DATA = { fat: [], com: null };
+let currentPage = 'faturamento';
+
+/* ── NAVEGAÇÃO ─────────────────────────────────── */
+function goTo(page){
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.page===page));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const target = document.getElementById('page-'+CSS.escape(page));
+  if(target) target.classList.add('active');
+  currentPage = page;
+  window.scrollTo(0,0);
+}
+
+/* ── HELPERS ────────────────────────────────────── */
+function fmtBRL(v){
+  if(v==null||isNaN(v)) return 'R$ —';
+  return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+function parseBRL(s){
+  if(s==null||s==='') return 0;
+  if(typeof s==='number') return s;
+  return parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;
+}
+function pctColor(p){ return p>=100?'c-green':p>=60?'c-teal':p>=30?'c-amber':'c-red'; }
+function pctBarColor(p){ return p>=100?'var(--green)':p>=60?'var(--teal)':p>=30?'var(--amber)':'var(--red)'; }
+function totV(v){ return v.semanas.reduce((a,s)=>({agend:a.agend+s.agend,reunioes:a.reunioes+s.reunioes,noshow:a.noshow+s.noshow,vendas:a.vendas+s.vendas}),{agend:0,reunioes:0,noshow:0,vendas:0}); }
+function conv(t){ return t.reunioes>0?Math.round(t.vendas/t.reunioes*100)+'%':'—'; }
+
+/* ── FETCH ──────────────────────────────────────── */
+async function fetchSheet(name){
+  const url=`https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
+  const res=await fetch(url);
+  const txt=await res.text();
+  const m=txt.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
+  if(!m) throw new Error('Resposta inesperada do Sheets');
+  return JSON.parse(m[1]);
+}
+
+async function loadData(){
+  document.getElementById('loading-screen').style.display='flex';
+  document.getElementById('error-bar').style.display='none';
+  let erros=[];
+
+  try{ const j=await fetchSheet(FAT_SHEET); DATA.fat=parseSheetFat(j); }
+  catch(e){ erros.push('Faturamento: '+e.message); DATA.fat=getDemoFat(); }
+
+  try{ const j=await fetchSheet(COM_SHEET); DATA.com=parseSheetCom(j); }
+  catch(e){ erros.push('Comercial: '+e.message); DATA.com=getDemoCom(); }
+
+  if(erros.length){
+    const eb=document.getElementById('error-bar');
+    eb.style.display='block';
+    eb.innerHTML='<strong>Atenção:</strong> '+erros.join(' | ')+' — exibindo dados de demonstração.';
+  }
+
+  renderAll();
+  document.getElementById('loading-screen').style.display='none';
+  document.getElementById('last-update').innerHTML=
+    '<span class="status-dot"></span>'+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+/* ── PARSERS ────────────────────────────────────── */
+function parseSheetFat(json){
+  const rows=json.table.rows, out=[];
+  for(const row of rows){
+    if(!row.c||!row.c[0]||!row.c[0].v) continue;
+    const nome=String(row.c[0].v).trim();
+    if(!nome||/total|grandes|descri|instru/i.test(nome)) continue;
+    const getV=idx=>{ const c=row.c[idx]; return c?(c.v!=null?c.v:parseBRL(c.f||'')):0; };
+    const meta=parseBRL(getV(5)), acum=parseBRL(getV(6));
+    if(meta===0&&acum===0) continue;
+    out.push({nome,meta,acum,pct:meta>0?(acum/meta)*100:0});
+  }
+  return out.length?out:getDemoFat();
+}
+
+function parseSheetCom(json){
+  const rows=json.table.rows;
+  const semanas=['Sem 1','Sem 2','Sem 3','Sem 4'];
+  const mKeys=['agend','reunioes','noshow','vendas'];
+  const vendedores=[];
+  let vi=-1;
+  for(const row of rows){
+    if(!row.c||!row.c[0]) continue;
+    const val=String(row.c[0].v||'').trim();
+    const meta=VENDEDOR_META.find(m=>val.toLowerCase().includes(m.nome.toLowerCase()));
+    if(meta){ vendedores.push({...meta,semanas:[{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]}); vi=vendedores.length-1; continue; }
+    if(vi<0) continue;
+    const vl=val.toLowerCase();
+    const mIdx=mKeys.findIndex(k=>(k==='agend'&&vl.includes('agend'))||(k==='reunioes'&&vl.includes('reuni'))||(k==='noshow'&&(vl.includes('no-show')||vl.includes('noshow')))||(k==='vendas'&&vl.includes('venda')));
+    if(mIdx<0) continue;
+    for(let s=0;s<4;s++){ const c=row.c[s+1]; vendedores[vi].semanas[s][mKeys[mIdx]]=c&&c.v!=null?Number(c.v)||0:0; }
+  }
+  return vendedores.length?{semanas,vendedores}:getDemoCom();
+}
+
+/* ── DEMO DATA ──────────────────────────────────── */
+function getDemoFat(){
+  return [
+    {nome:'Pontomais (40%)',     meta:2000,  acum:1217.46},
+    {nome:'VR Benefícios (1%)', meta:800,   acum:1473.07},
+    {nome:'Suporte Aquisição',  meta:3000,  acum:720},
+    {nome:'Suporte Permanência',meta:3000,  acum:240},
+    {nome:'Moskit (30%)',       meta:1400,  acum:0},
+    {nome:'VExpenses (30%)',    meta:200,   acum:0},
+    {nome:'Todos de Benefícios',meta:500,   acum:50},
+    {nome:'Seven Saúde B2B',    meta:40000, acum:798.40},
+  ].map(p=>({...p,pct:p.meta>0?(p.acum/p.meta)*100:0}));
+}
+function getDemoCom(){
+  return { semanas:['Sem 1','Sem 2','Sem 3','Sem 4'], vendedores:[
+    {...VENDEDOR_META[0],semanas:[{agend:1,reunioes:3,noshow:0,vendas:1},{agend:2,reunioes:2,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]},
+    {...VENDEDOR_META[1],semanas:[{agend:3,reunioes:2,noshow:1,vendas:0},{agend:4,reunioes:4,noshow:1,vendas:3},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]},
+    {...VENDEDOR_META[2],semanas:[{agend:3,reunioes:6,noshow:0,vendas:2},{agend:3,reunioes:4,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]},
+  ]};
+}
+
+/* ── RENDER ALL ─────────────────────────────────── */
+function renderAll(){
+  renderFaturamento();
+  renderTime();
+  renderSellerPages();
+}
+
+/* ── FATURAMENTO ────────────────────────────────── */
+function renderFaturamento(){
+  const fat=DATA.fat;
+  let tMeta=0,tAcum=0;
+  fat.forEach(p=>{tMeta+=p.meta;tAcum+=p.acum;});
+  const tPct=tMeta>0?(tAcum/tMeta)*100:0;
+
+  // KPIs
+  const topProd=fat.reduce((a,b)=>b.acum>a.acum?b:a,fat[0]||{nome:'—',acum:0});
+  document.getElementById('fat-kpis').innerHTML=`
+    <div class="kpi" style="border-color:rgba(34,212,124,0.2)">
+      <div class="kpi-label">Acumulado total</div>
+      <div class="kpi-val c-green">${fmtBRL(tAcum)}</div>
+      <div class="kpi-sub">${tPct.toFixed(1)}% da meta</div>
+    </div>
+    <div class="kpi" style="border-color:rgba(238,238,248,0.1)">
+      <div class="kpi-label">Meta mensal</div>
+      <div class="kpi-val c-muted">${fmtBRL(tMeta)}</div>
+      <div class="kpi-sub">somado todos os produtos</div>
+    </div>
+    <div class="kpi" style="border-color:rgba(124,106,255,0.2)">
+      <div class="kpi-label">Falta para a meta</div>
+      <div class="kpi-val c-accent">${fmtBRL(Math.max(0,tMeta-tAcum))}</div>
+      <div class="kpi-sub">${(100-Math.min(tPct,100)).toFixed(1)}% restante</div>
+    </div>
+    <div class="kpi" style="border-color:rgba(0,212,170,0.2)">
+      <div class="kpi-label">Melhor produto</div>
+      <div class="kpi-val c-teal" style="font-size:18px;padding-top:4px">${topProd.nome}</div>
+      <div class="kpi-sub">${fmtBRL(topProd.acum)} acumulado</div>
+    </div>`;
+
+  // Tabela
+  document.getElementById('fat-rows').innerHTML=fat.map(p=>{
+    const pct=Math.min(p.pct,100);
+    return `<div class="fat-row">
+      <div class="fat-name">${p.nome}</div>
+      <div class="fat-acum ${pctColor(p.pct)}">${fmtBRL(p.acum)}</div>
+      <div class="fat-meta">${fmtBRL(p.meta)}</div>
+      <div class="fat-pct-cell">
+        <span class="fat-pct ${pctColor(p.pct)}">${p.pct.toFixed(1)}%</span>
+        <div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${pctBarColor(p.pct)}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('fat-total').innerHTML=`
+    <span>Total</span>
+    <span class="${pctColor(tPct)}">${fmtBRL(tAcum)}</span>
+    <span class="c-muted">${fmtBRL(tMeta)}</span>
+    <span class="${pctColor(tPct)}">${tPct.toFixed(1)}%</span>`;
+}
+
+/* ── TIME ───────────────────────────────────────── */
+function renderTime(){
+  const com=DATA.com;
+  const grand=com.vendedores.reduce((a,v)=>{
+    v.semanas.forEach(s=>{a.agend+=s.agend;a.reunioes+=s.reunioes;a.noshow+=s.noshow;a.vendas+=s.vendas});
+    return a;
+  },{agend:0,reunioes:0,noshow:0,vendas:0});
+  const cvRate=grand.reunioes>0?Math.round(grand.vendas/grand.reunioes*100):0;
+
+  document.getElementById('time-kpis').innerHTML=`
+    <div class="kpi" style="border-color:rgba(124,106,255,0.2)">
+      <div class="kpi-label">Agendamentos</div>
+      <div class="kpi-val c-accent">${grand.agend}</div>
+      <div class="kpi-sub">no mês</div>
+    </div>
+    <div class="kpi" style="border-color:rgba(0,212,170,0.2)">
+      <div class="kpi-label">Reuniões realizadas</div>
+      <div class="kpi-val c-teal">${grand.reunioes}</div>
+      <div class="kpi-sub">no mês</div>
+    </div>
+    <div class="kpi" style="border-color:rgba(34,212,124,0.2)">
+      <div class="kpi-label">Vendas fechadas</div>
+      <div class="kpi-val c-green">${grand.vendas}</div>
+      <div class="kpi-sub">taxa de conversão: ${cvRate}%</div>
+    </div>
+    <div class="kpi" style="border-color:rgba(255,91,91,0.15)">
+      <div class="kpi-label">No-show</div>
+      <div class="kpi-val ${grand.noshow>0?'c-red':'c-muted'}">${grand.noshow}</div>
+      <div class="kpi-sub">de ${grand.reunioes} reuniões</div>
+    </div>`;
+
+  // Cards vendedoras
+  document.getElementById('team-cards').innerHTML=com.vendedores.map(v=>{
+    const t=totV(v);
+    return `<div class="team-card" onclick="goTo('${v.nome}')" style="border-color:rgba(255,255,255,0.1)">
+      <div class="team-card-header">
+        <div class="avatar" style="background:${v.bg};color:${v.cor}">${v.iniciais}</div>
+        <div>
+          <div class="seller-name-big">${v.nome}</div>
+          <div style="font-size:11px;color:var(--muted)">Conversão: <strong style="color:${v.cor}">${conv(t)}</strong></div>
+        </div>
+        <div class="badge" style="background:${v.bg};color:${v.cor}">${t.vendas} venda${t.vendas!==1?'s':''}</div>
+      </div>
+      <div class="team-metrics">
+        <div class="tm-cell"><div class="tm-label">Agend.</div><div class="tm-val c-accent">${t.agend}</div></div>
+        <div class="tm-cell"><div class="tm-label">Reun.</div><div class="tm-val" style="color:${v.cor}">${t.reunioes}</div></div>
+        <div class="tm-cell"><div class="tm-label">No-show</div><div class="tm-val ${t.noshow>0?'c-red':'c-dim'}">${t.noshow}</div></div>
+        <div class="tm-cell"><div class="tm-label">Vendas</div><div class="tm-val c-green">${t.vendas}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Tabela por semana consolidada
+  const semanas=com.semanas;
+  let weeksHtml=`<div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:12px;letter-spacing:0.06em;text-transform:uppercase">Por semana</div>
+  <div style="display:grid;grid-template-columns:repeat(${semanas.length},1fr);gap:12px">`;
+  semanas.forEach((sem,i)=>{
+    const st=com.vendedores.reduce((a,v)=>({agend:a.agend+v.semanas[i].agend,reunioes:a.reunioes+v.semanas[i].reunioes,noshow:a.noshow+v.semanas[i].noshow,vendas:a.vendas+v.semanas[i].vendas}),{agend:0,reunioes:0,noshow:0,vendas:0});
+    const empty=st.agend===0&&st.reunioes===0;
+    weeksHtml+=`<div class="kpi" style="opacity:${empty?0.4:1}">
+      <div class="kpi-label">${sem}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 6px;margin-top:6px">
+        <div><div style="font-size:10px;color:var(--dim)">Agend.</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent)">${st.agend}</div></div>
+        <div><div style="font-size:10px;color:var(--dim)">Reun.</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--teal)">${st.reunioes}</div></div>
+        <div><div style="font-size:10px;color:var(--dim)">No-show</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:${st.noshow>0?'var(--red)':'var(--dim)'}">${st.noshow}</div></div>
+        <div><div style="font-size:10px;color:var(--dim)">Vendas</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--green)">${st.vendas}</div></div>
+      </div>
+    </div>`;
+  });
+  weeksHtml+='</div>';
+  document.getElementById('time-weeks-wrap').innerHTML=weeksHtml;
+}
+
+/* ── SELLER PAGES ───────────────────────────────── */
+function renderSellerPages(){
+  const com=DATA.com;
+  const container=document.getElementById('seller-pages');
+  container.innerHTML='';
+
+  com.vendedores.forEach(v=>{
+    const t=totV(v);
+    const cvRate=conv(t);
+    const pageId='page-'+v.nome;
+
+    // cria botão de nav se não existir
+    if(!document.querySelector(`.nav-btn[data-page="${v.nome}"]`)){
+      const btn=document.createElement('button');
+      btn.className='nav-btn'; btn.dataset.page=v.nome;
+      btn.onclick=()=>goTo(v.nome);
+      btn.innerHTML=`<span class="nav-dot"></span>${v.nome}`;
+      // já existe no HTML estático para os 3 nomes, mas por segurança
+    }
+
+    // tabela semanal
+    const colTemplate=`140px repeat(4,1fr)`;
+    const metricas=[
+      {key:'agend',   label:'Agendamentos', cor:'var(--accent)'},
+      {key:'reunioes',label:'Reuniões',      cor:v.cor},
+      {key:'noshow',  label:'No-show',       cor:'var(--red)'},
+      {key:'vendas',  label:'Vendas',        cor:'var(--green)'},
+    ];
+
+    const theadCells=`<span class="cell-label">Métrica</span>`+
+      com.semanas.map(s=>`<span class="cell-label" style="text-align:center">${s}</span>`).join('')+
+      `<span class="cell-label" style="text-align:center">Total</span>`;
+
+    const bodyRows=metricas.map(m=>{
+      const vals=v.semanas.map(s=>s[m.key]);
+      const total=vals.reduce((a,b)=>a+b,0);
+      const isNoshow=m.key==='noshow';
+      return `<div class="weeks-row" style="grid-template-columns:140px repeat(${com.semanas.length},1fr) 80px">
+        <div class="cell-name">${m.label}</div>
+        ${vals.map((val,i)=>{
+          const empty=v.semanas[i].agend===0&&v.semanas[i].reunioes===0&&v.semanas[i].noshow===0&&v.semanas[i].vendas===0;
+          const color=isNoshow?(val>0?'var(--red)':'var(--dim)'):(val===0?'var(--dim)':m.cor);
+          return `<div class="cell-val" style="color:${empty?'var(--dim)':color};opacity:${empty?0.4:1}">${val}</div>`;
+        }).join('')}
+        <div class="cell-val" style="color:${isNoshow&&total>0?'var(--red)':total===0?'var(--dim)':m.cor};font-size:17px">${total}</div>
+      </div>`;
+    }).join('');
+
+    const div=document.createElement('div');
+    div.className='page';
+    div.id=pageId;
+    div.innerHTML=`
+      <div class="page-header" style="margin-bottom:20px">
+        <div class="page-title">${v.nome}</div>
+        <div class="page-sub">Desempenho individual no mês</div>
+      </div>
+      <div class="seller-hero">
+        <div class="hero-avatar" style="background:${v.bg};color:${v.cor}">${v.iniciais}</div>
+        <div>
+          <div class="hero-name">${v.nome}</div>
+          <div class="hero-sub">Taxa de conversão: <strong style="color:${v.cor}">${cvRate}</strong></div>
+        </div>
+        <div class="hero-badges">
+          <div class="hero-badge" style="background:var(--accent-dim);color:var(--accent)">${t.agend} agendamentos</div>
+          <div class="hero-badge" style="background:${v.bg};color:${v.cor}">${t.vendas} venda${t.vendas!==1?'s':''}</div>
+          <div class="hero-badge" style="background:${t.noshow>0?'var(--red-dim)':'var(--green-dim)'};color:${t.noshow>0?'var(--red)':'var(--green)'}">
+            ${t.noshow} no-show${t.noshow!==1?'s':''}
+          </div>
+        </div>
+      </div>
+      <div class="kpi-grid-3" style="margin-bottom:24px">
+        <div class="kpi" style="border-color:rgba(124,106,255,0.2)">
+          <div class="kpi-label">Agendamentos</div>
+          <div class="kpi-val c-accent">${t.agend}</div>
+          <div class="kpi-sub">no mês</div>
+        </div>
+        <div class="kpi" style="border-color:rgba(0,212,170,0.2)">
+          <div class="kpi-label">Reuniões realizadas</div>
+          <div class="kpi-val" style="color:${v.cor}">${t.reunioes}</div>
+          <div class="kpi-sub">no mês</div>
+        </div>
+        <div class="kpi" style="border-color:rgba(34,212,124,0.2)">
+          <div class="kpi-label">Vendas fechadas</div>
+          <div class="kpi-val c-green">${t.vendas}</div>
+          <div class="kpi-sub">conversão: ${cvRate}</div>
+        </div>
+      </div>
+      <div class="weeks-card">
+        <div class="weeks-thead" style="grid-template-columns:140px repeat(${com.semanas.length},1fr) 80px">${theadCells}</div>
+        ${bodyRows}
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+loadData();
+</script>
+</body>
+</html>
