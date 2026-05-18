@@ -107,12 +107,12 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .tm-cell{padding:14px 10px;text-align:center;border-right:1px solid var(--border)}
 .tm-cell:last-child{border-right:none}
 .tm-label{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px}
-.tm-val{font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+.tm-val{font-family:'DM Sans',sans-serif;font-size:22px;font-weight:500;letter-spacing:-0.3px}
 
 /* ── SELLER INDIVIDUAL PAGE ── */
 .seller-hero{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 32px;margin-bottom:24px;display:flex;align-items:center;gap:20px}
 .hero-avatar{width:60px;height:60px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;flex-shrink:0}
-.hero-name{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:3px}
+.hero-name{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:500;letter-spacing:-0.5px;margin-bottom:3px}
 .hero-sub{font-size:13px;color:var(--muted)}
 .hero-badges{margin-left:auto;display:flex;gap:10px}
 .hero-badge{font-size:12px;font-weight:600;padding:6px 16px;border-radius:24px}
@@ -318,15 +318,25 @@ function parseSheetFat(json){
 }
 
 function parseSheetCom(json){
-  const rows=json.table.rows;
+  const table=json.table;
   const semanas=['Sem 1','Sem 2','Sem 3','Sem 4'];
   const mKeys=['agend','reunioes','noshow','vendas'];
   const vendedores=[];
   let vi=-1;
-  for(const row of rows){
+
+  // O Sheets trata a 1ª linha como header — precisamos incluí-la
+  const allRows=[];
+  if(table.cols && table.cols[0] && table.cols[0].label){
+    // primeira linha virou header, reconstruímos como row
+    allRows.push({c: table.cols.map(c=>({v:c.label||''}))});
+  }
+  (table.rows||[]).forEach(r=>allRows.push(r));
+
+  for(const row of allRows){
     if(!row.c||!row.c[0]) continue;
     const val=String(row.c[0].v||'').trim();
-    const meta=VENDEDOR_META.find(m=>m.nome.toLowerCase().split(' ').every(part=>val.toLowerCase().includes(part)));
+    if(!val) continue;
+    const meta=VENDEDOR_META.find(m=>m.nome.toLowerCase().split(' ').some(part=>part.length>3&&val.toLowerCase().includes(part)));
     if(meta){ vendedores.push({...meta,semanas:[{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]}); vi=vendedores.length-1; continue; }
     if(vi<0) continue;
     const vl=val.toLowerCase();
@@ -479,10 +489,10 @@ function renderTime(){
     weeksHtml+=`<div class="kpi" style="opacity:${empty?0.4:1}">
       <div class="kpi-label">${sem}</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 6px;margin-top:6px">
-        <div><div style="font-size:10px;color:var(--dim)">Agend.</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent)">${st.agend}</div></div>
-        <div><div style="font-size:10px;color:var(--dim)">Reun.</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--teal)">${st.reunioes}</div></div>
-        <div><div style="font-size:10px;color:var(--dim)">No-show</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:${st.noshow>0?'var(--red)':'var(--dim)'}">${st.noshow}</div></div>
-        <div><div style="font-size:10px;color:var(--dim)">Vendas</div><div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--green)">${st.vendas}</div></div>
+        <div><div style="font-size:10px;color:var(--dim)">Agend.</div><div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:500;color:var(--accent)">${st.agend}</div></div>
+        <div><div style="font-size:10px;color:var(--dim)">Reun.</div><div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:500;color:var(--teal)">${st.reunioes}</div></div>
+        <div><div style="font-size:10px;color:var(--dim)">No-show</div><div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:500;color:${st.noshow>0?'var(--red)':'var(--dim)'}\">${st.noshow}</div></div>
+        <div><div style="font-size:10px;color:var(--dim)">Vendas</div><div style="font-family:'DM Sans',sans-serif;font-size:20px;font-weight:500;color:var(--green)">${st.vendas}</div></div>
       </div>
     </div>`;
   });
