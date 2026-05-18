@@ -73,7 +73,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .kpi-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px}
 .kpi-label{font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
-.kpi-val{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;line-height:1;margin-bottom:4px}
+.kpi-val{font-family:'DM Sans',sans-serif;font-size:26px;font-weight:500;line-height:1;margin-bottom:4px;letter-spacing:-0.5px}
 .kpi-sub{font-size:12px;color:var(--muted)}
 
 /* ── FAT TABLE ── */
@@ -326,7 +326,7 @@ function parseSheetCom(json){
   for(const row of rows){
     if(!row.c||!row.c[0]) continue;
     const val=String(row.c[0].v||'').trim();
-    const meta=VENDEDOR_META.find(m=>val.toLowerCase().includes(m.nome.toLowerCase()));
+    const meta=VENDEDOR_META.find(m=>m.nome.toLowerCase().split(' ').every(part=>val.toLowerCase().includes(part)));
     if(meta){ vendedores.push({...meta,semanas:[{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]}); vi=vendedores.length-1; continue; }
     if(vi<0) continue;
     const vl=val.toLowerCase();
