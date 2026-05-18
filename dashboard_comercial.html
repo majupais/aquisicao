@@ -543,7 +543,9 @@ function renderSellerPages(){
   com.vendedores.forEach(v=>{
     const t=totV(v);
     const cvRate=conv(t);
-    const pageId='page-'+v.nome;
+    // Usa o nome do VENDEDOR_META como ID fixo (não o nome que vem da planilha)
+    const metaNome = VENDEDOR_META.find(m=>m.iniciais===v.iniciais)?.nome || v.nome;
+    const pageId='page-'+metaNome;
 
     // cria botão de nav se não existir
     if(!document.querySelector(`.nav-btn[data-page="${v.nome}"]`)){
@@ -587,13 +589,13 @@ function renderSellerPages(){
     div.id=pageId;
     div.innerHTML=`
       <div class="page-header" style="margin-bottom:20px">
-        <div class="page-title">${v.nome}</div>
+        <div class="page-title">${metaNome}</div>
         <div class="page-sub">Desempenho individual no mês</div>
       </div>
       <div class="seller-hero">
         <div class="hero-avatar" style="background:${v.bg};color:${v.cor}">${v.iniciais}</div>
         <div>
-          <div class="hero-name">${v.nome}</div>
+          <div class="hero-name">${metaNome}</div>
           <div class="hero-sub">Taxa de conversão: <strong style="color:${v.cor}">${cvRate}</strong></div>
         </div>
         <div class="hero-badges">
