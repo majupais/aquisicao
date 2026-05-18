@@ -324,25 +324,59 @@ function parseSheetCom(json){
   const vendedores=[];
   let vi=-1;
 
-  // O Sheets trata a 1ª linha como header — precisamos incluí-la
+  // O Sheets trata linha 1 como header — o nome da primeira vendedora
+  // aparece em cols[0].label junto com "Métrica" (ex: "Beatriz Roveri Métrica")
+  // As demais vendedoras aparecem normalmente nas rows
   const allRows=[];
-  if(table.cols && table.cols[0] && table.cols[0].label){
-    // primeira linha virou header, reconstruímos como row
-    allRows.push({c: table.cols.map(c=>({v:c.label||''}))});
-  }
-  (table.rows||[]).forEach(r=>allRows.push(r));
 
-  for(const row of allRows){
+  // Extrai primeira vendedora do header
+  const headerLabel = (table.cols&&table.cols[0]&&table.cols[0].label)||'';
+  const primeiraVendedora = VENDEDOR_META.find(m=>
+    m.nome.toLowerCase().split(' ').some(p=>p.length>3&&headerLabel.toLowerCase().includes(p))
+  );
+  if(primeiraVendedora){
+    vendedores.push({...primeiraVendedora, semanas:[
+      {agend:0,reunioes:0,noshow:0,vendas:0},
+      {agend:0,reunioes:0,noshow:0,vendas:0},
+      {agend:0,reunioes:0,noshow:0,vendas:0},
+      {agend:0,reunioes:0,noshow:0,vendas:0}
+    ]});
+    vi=0;
+  }
+
+  for(const row of (table.rows||[])){
     if(!row.c||!row.c[0]) continue;
     const val=String(row.c[0].v||'').trim();
     if(!val) continue;
-    const meta=VENDEDOR_META.find(m=>m.nome.toLowerCase().split(' ').some(part=>part.length>3&&val.toLowerCase().includes(part)));
-    if(meta){ vendedores.push({...meta,semanas:[{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]}); vi=vendedores.length-1; continue; }
+
+    // Verifica se é linha de nome de vendedora
+    const meta=VENDEDOR_META.find(m=>
+      m.nome.toLowerCase().split(' ').some(p=>p.length>3&&val.toLowerCase().includes(p))
+    );
+    if(meta && meta!==primeiraVendedora){
+      vendedores.push({...meta, semanas:[
+        {agend:0,reunioes:0,noshow:0,vendas:0},
+        {agend:0,reunioes:0,noshow:0,vendas:0},
+        {agend:0,reunioes:0,noshow:0,vendas:0},
+        {agend:0,reunioes:0,noshow:0,vendas:0}
+      ]});
+      vi=vendedores.length-1;
+      continue;
+    }
+
     if(vi<0) continue;
     const vl=val.toLowerCase();
-    const mIdx=mKeys.findIndex(k=>(k==='agend'&&vl.includes('agend'))||(k==='reunioes'&&vl.includes('reuni'))||(k==='noshow'&&(vl.includes('no-show')||vl.includes('noshow')))||(k==='vendas'&&vl.includes('venda')));
+    const mIdx=mKeys.findIndex(k=>
+      (k==='agend'&&vl.includes('agend'))||
+      (k==='reunioes'&&vl.includes('reuni'))||
+      (k==='noshow'&&(vl.includes('no-show')||vl.includes('noshow')))||
+      (k==='vendas'&&vl.includes('venda'))
+    );
     if(mIdx<0) continue;
-    for(let s=0;s<4;s++){ const c=row.c[s+1]; vendedores[vi].semanas[s][mKeys[mIdx]]=c&&c.v!=null?Number(c.v)||0:0; }
+    for(let s=0;s<4;s++){
+      const c=row.c[s+1];
+      vendedores[vi].semanas[s][mKeys[mIdx]]=c&&c.v!=null?Number(c.v)||0:0;
+    }
   }
   return vendedores.length?{semanas,vendedores}:getDemoCom();
 }
