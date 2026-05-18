@@ -322,6 +322,12 @@ function parseCom(table){
 function demoFat(){return [{nome:'Pontomais (40%)',meta:2000,acum:1217.46,pct:60.87},{nome:'VR Benefícios (1%)',meta:800,acum:1473.07,pct:184},{nome:'Suporte Aquisição',meta:3000,acum:720,pct:24},{nome:'Suporte Permanência',meta:3000,acum:240,pct:8},{nome:'Moskit (30%)',meta:1400,acum:0,pct:0},{nome:'VExpenses (30%)',meta:200,acum:0,pct:0},{nome:'Todos de Benefícios',meta:500,acum:50,pct:10},{nome:'Seven Saúde B2B',meta:40000,acum:798.40,pct:2}];}
 function demoCom(){return {semanas:['Sem 1','Sem 2','Sem 3','Sem 4'],vendedores:[{...VM[0],semanas:[{agend:1,reunioes:3,noshow:0,vendas:1},{agend:2,reunioes:2,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]},{...VM[1],semanas:[{agend:3,reunioes:2,noshow:1,vendas:0},{agend:4,reunioes:4,noshow:1,vendas:3},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]},{...VM[2],semanas:[{agend:3,reunioes:6,noshow:0,vendas:2},{agend:3,reunioes:4,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]}]};}
 
+
+function avatarHtml(v,sz){
+  sz=sz||38; var fs=Math.round(sz*0.34);
+  if(v.foto) return '<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;overflow:hidden;flex-shrink:0"><img src="'+v.foto+'" style="width:100%;height:100%;object-fit:cover"></div>';
+  return '<div style="width:'+sz+'px;height:'+sz+'px;border-radius:50%;background:'+v.bg+';color:'+v.cor+';display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;font-size:'+fs+'px;flex-shrink:0">'+v.iniciais+'</div>';
+}
 /* ── RENDER ALL ── */
 function renderAll(){
   renderFat();
@@ -373,7 +379,7 @@ function renderTime(){
     const t=totV(v);
     return `<div class="team-card" onclick="goTo('v${i}')">
       <div class="tc-header">
-        <div class="avatar" style="background:${v.bg};color:${v.cor};overflow:hidden;padding:0">${v.foto?`<img src="${v.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:v.iniciais}</div>
+        ${avatarHtml(v,38)}
         <div><div class="tc-name">${v.nome}</div><div class="tc-conv">Conversão: <strong style="color:${v.cor}">${convRate(t)}</strong></div></div>
         <div class="badge" style="background:${v.bg};color:${v.cor}">${t.vendas} venda${t.vendas!==1?'s':''}</div>
       </div>
@@ -438,7 +444,7 @@ function renderSellers(){
       <div class="page-title">${v.nome}</div>
       <div class="page-sub">Desempenho individual no mês</div>
       <div class="seller-hero">
-        <div class="hero-av" style="background:${v.bg};color:${v.cor};overflow:hidden;padding:0">${v.foto?`<img src="${v.foto}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:v.iniciais}</div>
+        ${avatarHtml(v,58)}
         <div>
           <div class="hero-name">${v.nome}</div>
           <div class="hero-sub">Taxa de conversão: <strong style="color:${v.cor}">${convRate(t)}</strong></div>
