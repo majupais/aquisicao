@@ -269,7 +269,7 @@ function parseCom(table){
 
   // Inicializa com estrutura fixa baseada no VM
   const vendedores=VM.map(m=>({
-    nome:m.nome, iniciais:m.iniciais, cor:m.cor, bg:m.bg,
+    nome:m.nome, iniciais:m.iniciais, cor:m.cor, bg:m.bg, foto:m.foto||null,
     semanas: Array.from({length:4},()=>({agend:0,reunioes:0,noshow:0,vendas:0}))
   }));
 
