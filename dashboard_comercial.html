@@ -62,10 +62,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .kpi-sub{font-size:12px;color:var(--muted)}
 /* FAT TABLE */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.fat-head{display:grid;grid-template-columns:1fr 160px 160px 100px;padding:11px 20px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.fat-head{display:grid;grid-template-columns:1fr 150px 150px 150px 90px;padding:11px 20px;background:var(--surface2);border-bottom:1px solid var(--border)}
 .fat-head span{font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--dim)}
 .fat-head span:not(:first-child){text-align:right}
-.fat-row{display:grid;grid-template-columns:1fr 160px 160px 100px;padding:13px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background 0.12s}
+.fat-row{display:grid;grid-template-columns:1fr 150px 150px 150px 90px;padding:13px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background 0.12s}
 .fat-row:last-child{border-bottom:none}
 .fat-row:hover{background:var(--surface2)}
 .fat-acum{text-align:right;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500}
@@ -74,7 +74,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .fat-pct{font-size:12px;font-weight:500}
 .bar-bg{width:70px;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
 .bar-fill{height:100%;border-radius:2px}
-.fat-foot{display:grid;grid-template-columns:1fr 160px 160px 100px;padding:14px 20px;background:var(--surface2);border-top:2px solid var(--border2)}
+.fat-foot{display:grid;grid-template-columns:1fr 150px 150px 150px 90px;padding:14px 20px;background:var(--surface2);border-top:2px solid var(--border2)}
 .fat-foot span{font-size:13px;font-weight:600}
 .fat-foot span:not(:first-child){text-align:right}
 /* TEAM CARDS */
@@ -164,7 +164,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div class="page-sub">Acumulado mensal por produto</div>
     <div class="kpi-row kpi-row-4" id="fat-kpis"></div>
     <div class="card">
-      <div class="fat-head"><span>Produto</span><span>Acumulado</span><span>Meta mês</span><span>% da meta</span></div>
+      <div class="fat-head"><span>Produto</span><span>Vendido</span><span>Acumulado (fat.)</span><span>Meta mês</span><span>% meta</span></div>
       <div id="fat-rows"></div>
       <div class="fat-foot" id="fat-foot"></div>
     </div>
@@ -255,9 +255,9 @@ function parseFat(table){
     const nome=String(row.c[0].v).trim();
     if(/total|grandes|descri|instru/i.test(nome)) continue;
     const getV=i=>{const c=row.c[i];return c?(c.v!=null?c.v:parseBRL(c.f||'')):0;};
-    const meta=parseBRL(getV(5)), acum=parseBRL(getV(6));
+    const meta=parseBRL(getV(5)), acum=parseBRL(getV(6)), vendido=parseBRL(getV(7));
     if(meta===0&&acum===0) continue;
-    out.push({nome,meta,acum,pct:meta>0?(acum/meta)*100:0});
+    out.push({nome,meta,acum,vendido,pct:meta>0?(acum/meta)*100:0});
   }
   return out.length?out:demoFat();
 }
@@ -351,6 +351,10 @@ function renderFat(){
   document.getElementById('fat-rows').innerHTML=fat.map(p=>`
     <div class="fat-row">
       <div style="font-size:13px">${p.nome}</div>
+      <div style="text-align:right">
+        <div style="font-size:13px;font-weight:500;color:${p.vendido>0?'var(--teal)':'var(--dim)'}">${p.vendido>0?fmtBRL(p.vendido):'—'}</div>
+        ${p.vendido>0&&p.acum>0?`<div style="font-size:10px;color:var(--dim);margin-top:2px">fat. ${Math.round(p.acum/p.vendido*100)}% do vendido</div>`:''}
+      </div>
       <div class="fat-acum ${pctC(p.pct)}">${fmtBRL(p.acum)}</div>
       <div class="fat-meta">${fmtBRL(p.meta)}</div>
       <div class="fat-pct-cell">
@@ -359,7 +363,8 @@ function renderFat(){
       </div>
     </div>`).join('');
 
-  document.getElementById('fat-foot').innerHTML=`<span>Total</span><span class="${pctC(tP)}">${fmtBRL(tA)}</span><span class="c-muted">${fmtBRL(tM)}</span><span class="${pctC(tP)}">${tP.toFixed(1)}%</span>`;
+  const tV=fat.reduce((a,p)=>a+p.vendido,0);
+  document.getElementById('fat-foot').innerHTML=`<span>Total</span><span class="c-teal">${fmtBRL(tV)}</span><span class="${pctC(tP)}">${fmtBRL(tA)}</span><span class="c-muted">${fmtBRL(tM)}</span><span class="${pctC(tP)}">${tP.toFixed(1)}%</span>`;
 }
 
 /* ── TIME ── */
