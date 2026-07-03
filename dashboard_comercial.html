@@ -226,7 +226,7 @@ const fmtBRL=v=>v==null||isNaN(v)?'R$ —':'R$ '+Number(v).toLocaleString('pt-BR
 const parseBRL=s=>{if(s==null||s==='')return 0;if(typeof s==='number')return s;return parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;};
 const pctC=p=>p>=100?'c-green':p>=60?'c-teal':p>=30?'c-amber':'c-red';
 const pctBar=p=>p>=100?'var(--green)':p>=60?'var(--teal)':p>=30?'var(--amber)':'var(--red)';
-const totV=v=>v.semanas.reduce((a,s)=>({agend:a.agend+s.agend,reunioes:a.reunioes+s.reunioes,noshow:a.noshow+s.noshow,vendas:a.vendas+s.vendas}),{agend:0,reunioes:0,noshow:0,vendas:0});
+const totV=v=>v.semanas.reduce((a,s)=>({ligfeitas:a.ligfeitas+(s.ligfeitas||0),ligatend:a.ligatend+(s.ligatend||0),agend:a.agend+s.agend,reunioes:a.reunioes+s.reunioes,noshow:a.noshow+s.noshow,vendas:a.vendas+s.vendas}),{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0});
 const convRate=t=>t.reunioes>0?Math.round(t.vendas/t.reunioes*100)+'%':'—';
 
 /* ── FETCH ── */
@@ -277,12 +277,11 @@ function parseFat(table){
 
 function parseCom(table){
   const semanas=['Sem 1','Sem 2','Sem 3','Sem 4'];
-  const mKeys=['agend','reunioes','noshow','vendas'];
 
   // Inicializa com estrutura fixa baseada no VM
   const vendedores=VM.map(m=>({
     nome:m.nome, iniciais:m.iniciais, cor:m.cor, bg:m.bg, foto:m.foto||null,
-    semanas: Array.from({length:4},()=>({agend:0,reunioes:0,noshow:0,vendas:0}))
+    semanas: Array.from({length:4},()=>({ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0}))
   }));
 
   // Atualiza nomes na sidebar
@@ -314,16 +313,18 @@ function parseCom(table){
     if(vi<0) continue;
 
     const vl=val.toLowerCase();
-    let mIdx=-1;
-    if(vl.includes('agend')) mIdx=0;
-    else if(vl.includes('reuni')) mIdx=1;
-    else if(vl.includes('no-show')||vl.includes('noshow')) mIdx=2;
-    else if(vl.includes('venda')) mIdx=3;
-    if(mIdx<0) continue;
+    let mKey=null;
+    if(vl.includes('ligaç')&&(vl.includes('feita')||vl.includes('enviad'))) mKey='ligfeitas';
+    else if(vl.includes('ligaç')&&(vl.includes('atendid')||vl.includes('respond'))) mKey='ligatend';
+    else if(vl.includes('agend')) mKey='agend';
+    else if(vl.includes('reuni')) mKey='reunioes';
+    else if(vl.includes('no-show')||vl.includes('noshow')) mKey='noshow';
+    else if(vl.includes('venda')) mKey='vendas';
+    if(!mKey) continue;
 
     for(let s=0;s<4;s++){
       const c=row.c[s+1];
-      vendedores[vi].semanas[s][mKeys[mIdx]]=c&&c.v!=null?Number(c.v)||0:0;
+      vendedores[vi].semanas[s][mKey]=c&&c.v!=null?Number(c.v)||0:0;
     }
   }
 
@@ -332,7 +333,7 @@ function parseCom(table){
 
 /* ── DEMO ── */
 function demoFat(){return [{nome:'Pontomais (40%)',meta:2000,acum:1217.46,pct:60.87},{nome:'VR Benefícios (1%)',meta:800,acum:1473.07,pct:184},{nome:'Suporte Aquisição',meta:3000,acum:720,pct:24},{nome:'Suporte Permanência',meta:3000,acum:240,pct:8},{nome:'Moskit (30%)',meta:1400,acum:0,pct:0},{nome:'VExpenses (30%)',meta:200,acum:0,pct:0},{nome:'Todos de Benefícios',meta:500,acum:50,pct:10},{nome:'Seven Saúde B2B',meta:40000,acum:798.40,pct:2}];}
-function demoCom(){return {semanas:['Sem 1','Sem 2','Sem 3','Sem 4'],vendedores:[{...VM[0],semanas:[{agend:1,reunioes:3,noshow:0,vendas:1},{agend:2,reunioes:2,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]},{...VM[1],semanas:[{agend:3,reunioes:2,noshow:1,vendas:0},{agend:4,reunioes:4,noshow:1,vendas:3},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]},{...VM[2],semanas:[{agend:3,reunioes:6,noshow:0,vendas:2},{agend:3,reunioes:4,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0},{agend:0,reunioes:0,noshow:0,vendas:0}]}]};}
+function demoCom(){return {semanas:['Sem 1','Sem 2','Sem 3','Sem 4'],vendedores:[{...VM[0],semanas:[{ligfeitas:150,ligatend:12,agend:1,reunioes:3,noshow:0,vendas:1},{ligfeitas:180,ligatend:15,agend:2,reunioes:2,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0}]},{...VM[1],semanas:[{ligfeitas:339,ligatend:18,agend:3,reunioes:2,noshow:1,vendas:0},{ligfeitas:413,ligatend:46,agend:4,reunioes:4,noshow:1,vendas:3},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0}]},{...VM[2],semanas:[{ligfeitas:109,ligatend:16,agend:3,reunioes:6,noshow:0,vendas:2},{ligfeitas:242,ligatend:31,agend:3,reunioes:4,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0}]}]};}
 
 
 function avatarHtml(v,sz){
@@ -428,6 +429,8 @@ function renderTime(){
 function renderSellers(){
   const {semanas,vendedores}=DATA.com;
   const metricas=[
+    {key:'ligfeitas',label:'Ligações feitas / whats enviados',     cor:null},
+    {key:'ligatend', label:'Ligações atendidas / whats respondidos', cor:null},
     {key:'agend',   label:'Agendamentos realizados', cor:'var(--accent)'},
     {key:'reunioes',label:'Reuniões realizadas',      cor:null},
     {key:'noshow',  label:'No-show',                  cor:'var(--red)', isNS:true},
@@ -449,7 +452,7 @@ function renderSellers(){
       return `<div class="wt-row" style="grid-template-columns:${cols}">
         <div class="wt-name">${m.label}</div>
         ${vals.map((val,si)=>{
-          const e=v.semanas[si].agend===0&&v.semanas[si].reunioes===0&&v.semanas[si].noshow===0&&v.semanas[si].vendas===0;
+          const e=v.semanas[si].ligfeitas===0&&v.semanas[si].ligatend===0&&v.semanas[si].agend===0&&v.semanas[si].reunioes===0&&v.semanas[si].noshow===0&&v.semanas[si].vendas===0;
           const c=m.isNS?(val>0?'var(--red)':'var(--dim)'):(val===0?'var(--dim)':(m.cor||v.cor));
           return `<div class="wt-val" style="color:${c};opacity:${e?0.35:1}">${val}</div>`;
         }).join('')}
@@ -472,7 +475,8 @@ function renderSellers(){
           <div class="hero-badge" style="background:${t.noshow>0?'var(--red-dim)':'var(--green-dim)'};color:${t.noshow>0?'var(--red)':'var(--green)'}">${t.noshow} no-show</div>
         </div>
       </div>
-      <div class="kpi-row kpi-row-3" style="margin-bottom:22px">
+      <div class="kpi-row kpi-row-4" style="margin-bottom:22px">
+        <div class="kpi"><div class="kpi-label">Ligações / whats atendidos</div><div class="kpi-val" style="color:${v.cor}">${t.ligatend}</div><div class="kpi-sub">de ${t.ligfeitas} feitas/enviados</div></div>
         <div class="kpi" style="border-color:rgba(124,106,255,0.2)"><div class="kpi-label">Agendamentos</div><div class="kpi-val c-accent">${t.agend}</div><div class="kpi-sub">no mês</div></div>
         <div class="kpi" style="border-color:rgba(0,212,170,0.2)"><div class="kpi-label">Reuniões realizadas</div><div class="kpi-val" style="color:${v.cor}">${t.reunioes}</div><div class="kpi-sub">no mês</div></div>
         <div class="kpi" style="border-color:rgba(34,212,124,0.2)"><div class="kpi-label">Vendas fechadas</div><div class="kpi-val c-green">${t.vendas}</div><div class="kpi-sub">conversão: ${convRate(t)}</div></div>
