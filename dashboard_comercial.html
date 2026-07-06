@@ -195,11 +195,12 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 const SHEET_ID  = '19Sb8OnFC4fdCvIFP0_eu7xxccS0o07_fQQRl-xSi4HM';
 
 // ── MESES DISPONÍVEIS — adicione novos meses aqui conforme o ano avança ──
-// cada mês aponta para 2 abas: a de conversão (comercial) e a de faturamento
+// Meses com "sdr:true" leem a comercial da aba única SDR_Semanas (alimentada pelo Google Forms),
+// filtrando por mes/ano. Meses antigos (sem "sdr") continuam lendo da aba "Conversão MêsAA" antiga.
 const MESES = [
+  { label: 'Julho 2026', faturamento: 'Faturamento Julho26', sdr:true, mes:7, ano:2026 },
   { label: 'Junho 2026', conversao: 'Conversão Junho26', faturamento: 'Faturamento Junho26' },
   { label: 'Maio 2026',  conversao: 'Conversão Maio26',  faturamento: 'Faturamento Maio26'  },
-  // { label: 'Julho 2026', conversao: 'Conversão Julho26', faturamento: 'Faturamento Julho26' },
 ];
 
 let MES_ATUAL = MESES[0];
@@ -226,7 +227,7 @@ const fmtBRL=v=>v==null||isNaN(v)?'R$ —':'R$ '+Number(v).toLocaleString('pt-BR
 const parseBRL=s=>{if(s==null||s==='')return 0;if(typeof s==='number')return s;return parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;};
 const pctC=p=>p>=100?'c-green':p>=60?'c-teal':p>=30?'c-amber':'c-red';
 const pctBar=p=>p>=100?'var(--green)':p>=60?'var(--teal)':p>=30?'var(--amber)':'var(--red)';
-const totV=v=>v.semanas.reduce((a,s)=>({ligfeitas:a.ligfeitas+(s.ligfeitas||0),ligatend:a.ligatend+(s.ligatend||0),agend:a.agend+s.agend,reunioes:a.reunioes+s.reunioes,noshow:a.noshow+s.noshow,vendas:a.vendas+s.vendas}),{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0});
+const totV=v=>v.semanas.reduce((a,s)=>({ligfeitas:a.ligfeitas+(s.ligfeitas||0),ligatend:a.ligatend+(s.ligatend||0),agend:a.agend+s.agend,reunioes:a.reunioes+s.reunioes,noshow:a.noshow+s.noshow,vendas:a.vendas+s.vendas,indicacoes:a.indicacoes+(s.indicacoes||0)}),{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0});
 const convRate=t=>t.reunioes>0?Math.round(t.vendas/t.reunioes*100)+'%':'—';
 
 /* ── FETCH ── */
@@ -246,7 +247,13 @@ async function loadData(){
   try{ DATA.fat=parseFat((await fetchSheet(MES_ATUAL.faturamento)).table); }
   catch(e){ erros.push('Faturamento: '+e.message); DATA.fat=demoFat(); }
 
-  try{ DATA.com=parseCom((await fetchSheet(MES_ATUAL.conversao)).table); }
+  try{
+    if(MES_ATUAL.sdr){
+      DATA.com=parseComSDR((await fetchSheet('SDR_Semanas')).table, MES_ATUAL.mes, MES_ATUAL.ano);
+    } else {
+      DATA.com=parseCom((await fetchSheet(MES_ATUAL.conversao)).table);
+    }
+  }
   catch(e){ erros.push('Comercial: '+e.message); DATA.com=demoCom(); }
 
   if(erros.length){
@@ -331,9 +338,55 @@ function parseCom(table){
   return {semanas, vendedores};
 }
 
+/* ── PARSER NOVO: lê a aba única SDR_Semanas (alimentada pelo Google Forms) ──
+   Colunas esperadas: A=SDR, B=Semana(S1,S2...), C=Data início, D=Data fim,
+   E=Ligações feitas, F=Ligações atendidas, G=Agendamentos, H=Reuniões, I=Vendas, J=Indicações */
+function parseComSDR(table, mes, ano){
+  const g=(row,i)=>{const c=row.c[i]; return c&&c.v!=null?Number(c.v)||0:0;};
+
+  // Filtra apenas as linhas cuja "Data início" (coluna C) cai no mês/ano selecionado
+  const linhasMes=(table.rows||[]).filter(row=>{
+    if(!row.c||!row.c[2]) return false;
+    const dataStr=row.c[2].f||'';
+    const m=dataStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+    if(!m) return false;
+    return Number(m[2])===mes && Number(m[3])===ano;
+  });
+
+  // Descobre as semanas existentes no mês (S1, S2...), na ordem em que aparecem na planilha
+  const semanas=[];
+  linhasMes.forEach(row=>{
+    const sem=String(row.c[1]&&row.c[1].v!=null?row.c[1].v:'').trim();
+    if(sem && !semanas.includes(sem)) semanas.push(sem);
+  });
+  semanas.sort();
+
+  const vendedores=VM.map(m=>({
+    nome:m.nome, iniciais:m.iniciais, cor:m.cor, bg:m.bg, foto:m.foto||null,
+    semanas: semanas.map(()=>({ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0}))
+  }));
+
+  VM.forEach((m,i)=>{ const el=document.getElementById('nav-v'+i); if(el) el.textContent=m.nome; });
+
+  linhasMes.forEach(row=>{
+    const nomeSdr=String(row.c[0]&&row.c[0].v!=null?row.c[0].v:'').trim();
+    const vi=VM.findIndex(v=>v.nome.toLowerCase().split(' ').some(p=>p.length>3&&nomeSdr.toLowerCase().includes(p)));
+    if(vi<0) return;
+    const sem=String(row.c[1]&&row.c[1].v!=null?row.c[1].v:'').trim();
+    const si=semanas.indexOf(sem);
+    if(si<0) return;
+    vendedores[vi].semanas[si]={
+      ligfeitas:g(row,4), ligatend:g(row,5), agend:g(row,6), reunioes:g(row,7),
+      noshow:0, vendas:g(row,8), indicacoes:g(row,9)
+    };
+  });
+
+  return {semanas, vendedores};
+}
+
 /* ── DEMO ── */
 function demoFat(){return [{nome:'Pontomais (40%)',meta:2000,acum:1217.46,pct:60.87},{nome:'VR Benefícios (1%)',meta:800,acum:1473.07,pct:184},{nome:'Suporte Aquisição',meta:3000,acum:720,pct:24},{nome:'Suporte Permanência',meta:3000,acum:240,pct:8},{nome:'Moskit (30%)',meta:1400,acum:0,pct:0},{nome:'VExpenses (30%)',meta:200,acum:0,pct:0},{nome:'Todos de Benefícios',meta:500,acum:50,pct:10},{nome:'Seven Saúde B2B',meta:40000,acum:798.40,pct:2}];}
-function demoCom(){return {semanas:['Sem 1','Sem 2','Sem 3','Sem 4'],vendedores:[{...VM[0],semanas:[{ligfeitas:150,ligatend:12,agend:1,reunioes:3,noshow:0,vendas:1},{ligfeitas:180,ligatend:15,agend:2,reunioes:2,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0}]},{...VM[1],semanas:[{ligfeitas:339,ligatend:18,agend:3,reunioes:2,noshow:1,vendas:0},{ligfeitas:413,ligatend:46,agend:4,reunioes:4,noshow:1,vendas:3},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0}]},{...VM[2],semanas:[{ligfeitas:109,ligatend:16,agend:3,reunioes:6,noshow:0,vendas:2},{ligfeitas:242,ligatend:31,agend:3,reunioes:4,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0}]}]};}
+function demoCom(){return {semanas:['Sem 1','Sem 2','Sem 3','Sem 4'],vendedores:[{...VM[0],semanas:[{ligfeitas:150,ligatend:12,agend:1,reunioes:3,noshow:0,vendas:1,indicacoes:0},{ligfeitas:180,ligatend:15,agend:2,reunioes:2,noshow:0,vendas:0,indicacoes:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0}]},{...VM[1],semanas:[{ligfeitas:339,ligatend:18,agend:3,reunioes:2,noshow:1,vendas:0,indicacoes:0},{ligfeitas:413,ligatend:46,agend:4,reunioes:4,noshow:1,vendas:3,indicacoes:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0}]},{...VM[2],semanas:[{ligfeitas:109,ligatend:16,agend:3,reunioes:6,noshow:0,vendas:2,indicacoes:0},{ligfeitas:242,ligatend:31,agend:3,reunioes:4,noshow:0,vendas:0,indicacoes:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0},{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0}]}]};}
 
 
 function avatarHtml(v,sz){
@@ -435,6 +488,7 @@ function renderSellers(){
     {key:'reunioes',label:'Reuniões realizadas',      cor:null},
     {key:'noshow',  label:'No-show',                  cor:'var(--red)', isNS:true},
     {key:'vendas',  label:'Vendas realizadas',         cor:'var(--green)'},
+    {key:'indicacoes', label:'Indicações',             cor:'var(--amber)'},
   ];
 
   vendedores.forEach((v,i)=>{
