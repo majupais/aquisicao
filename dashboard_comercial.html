@@ -105,10 +105,12 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .fw-table tbody tr{border-bottom:1px solid var(--border)}
 .fw-table tbody tr:last-child{border-bottom:none}
 .fw-table tbody tr:hover td{background:var(--surface2)}
-.fw-table tbody tr.fw-total td{background:var(--surface3);font-weight:700;color:var(--text);border-bottom:2px solid var(--border2)}
+.fw-table tbody tr.fw-total td{background:var(--surface3);font-weight:700;color:var(--text);border-top:2px solid var(--border2)}
 .fw-block{display:inline-block;padding:3px 11px;border-radius:7px;font-weight:600}
 .fw-block.green{background:var(--green-dim);color:var(--green)}
 .fw-block.red{background:var(--red-dim);color:var(--red)}
+.fw-sep{border-left:2px solid var(--border2)}
+.fw-week-row th.fw-sep{border-left:2px solid var(--border2)}
 .week-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
 .week-label-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:12px;text-transform:uppercase;letter-spacing:0.06em}
 .week-nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -540,26 +542,26 @@ function renderFatWeekTable(){
   };
 
   const headWeekRow=`<tr class="fw-week-row"><th></th>${semanas.map(s=>
-    `<th colspan="3">${s.label}</th>`).join('')}</tr>`;
+    `<th colspan="3" class="fw-sep">${s.label}</th>`).join('')}</tr>`;
 
   const headSubRow=`<tr class="fw-sub-row"><th>Produto</th>${semanas.map(()=>
-    `<th>Meta</th><th>Vendido</th><th>Faturamento</th>`).join('')}</tr>`;
+    `<th class="fw-sep">Meta Fat.</th><th>Vendido</th><th>Faturamento</th>`).join('')}</tr>`;
 
   const totalCells=semanas.map(s=>
-    `<td>${fmtBRL(s.meta)}</td><td style="color:var(--text)">${fmtBRL(s.vendido)}</td><td>${fwBlock(s.faturamento,s.meta)}</td>`
+    `<td class="fw-sep">${fmtBRL(s.meta)}</td><td style="color:var(--text)">${fmtBRL(s.vendido)}</td><td>${fwBlock(s.faturamento,s.meta)}</td>`
   ).join('');
   const totalRowHtml=`<tr class="fw-total"><td>Total</td>${totalCells}</tr>`;
 
   const bodyRows=produtos.map(p=>{
     const cells=p.porSemana.map(s=>
-      `<td>${s.meta>0?fmtBRL(s.meta):'—'}</td>`+
+      `<td class="fw-sep">${s.meta>0?fmtBRL(s.meta):'—'}</td>`+
       `<td style="color:${s.vendido>0?'var(--text)':'var(--dim)'}">${s.vendido>0?fmtBRL(s.vendido):'—'}</td>`+
       `<td>${fwBlock(s.faturamento,s.meta)}</td>`
     ).join('');
     return `<tr><td>${p.nome}</td>${cells}</tr>`;
   }).join('');
 
-  el.innerHTML=`<thead>${headWeekRow}${headSubRow}</thead><tbody>${totalRowHtml}${bodyRows}</tbody>`;
+  el.innerHTML=`<thead>${headWeekRow}${headSubRow}</thead><tbody>${bodyRows}${totalRowHtml}</tbody>`;
 }
 
 /* ── TIME ── */
