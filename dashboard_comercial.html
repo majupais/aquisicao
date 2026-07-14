@@ -213,6 +213,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 
 <script>
 const SHEET_ID  = '19Sb8OnFC4fdCvIFP0_eu7xxccS0o07_fQQRl-xSi4HM';
+const SHEET_ID_RESULTADOS = '1_IwXgibR1io9ap79FukA3Ofm-hbrblghcY_XZFRENS4';
 
 // ── MESES DISPONÍVEIS — adicione novos meses aqui conforme o ano avança ──
 // Meses com "sdr:true" leem a comercial da aba única SDR_Semanas (alimentada pelo Google Forms),
@@ -259,6 +260,16 @@ async function fetchSheet(name){
   return JSON.parse(m[1]);
 }
 
+/* Busca em outra planilha (ex: a de "Resultados time"), com range fixo pra evitar
+   ambiguidade de cabeçalho auto-detectado pelo gviz */
+async function fetchCell(sheetId, name, range){
+  const url=`https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}&range=${range}&headers=0`;
+  const txt=await (await fetch(url)).text();
+  const m=txt.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/);
+  if(!m) throw new Error('Resposta inesperada');
+  return JSON.parse(m[1]);
+}
+
 async function loadData(){
   document.getElementById('loading-screen').style.display='flex';
   document.getElementById('err-bar').style.display='none';
@@ -280,6 +291,19 @@ async function loadData(){
     }
   }
   catch(e){ erros.push('Comercial: '+e.message); DATA.com=demoCom(); }
+
+  try{
+    if(MES_ATUAL.sdr){
+      // Célula B1 da aba "Aquisição" traz o total real de vendas do mês,
+      // incluindo vendas que não foram de nenhuma das 3 vendedoras
+      const tot=(await fetchCell(SHEET_ID_RESULTADOS, 'Aquisição', 'B1')).table;
+      const c=tot.rows && tot.rows[0] && tot.rows[0].c && tot.rows[0].c[0];
+      DATA.vendasTotalReal = (c && c.v!=null) ? Number(c.v)||0 : null;
+    } else {
+      DATA.vendasTotalReal = null;
+    }
+  }
+  catch(e){ erros.push('Total de vendas: '+e.message); DATA.vendasTotalReal=null; }
 
   if(erros.length){
     const eb=document.getElementById('err-bar');
@@ -568,12 +592,13 @@ function renderFatWeekTable(){
 function renderTime(){
   const {semanas,vendedores}=DATA.com;
   const grand=vendedores.reduce((a,v)=>{v.semanas.forEach(s=>{a.agend+=s.agend;a.reunioes+=s.reunioes;a.noshow+=s.noshow;a.vendas+=s.vendas;});return a;},{agend:0,reunioes:0,noshow:0,vendas:0});
-  const cv=grand.reunioes>0?Math.round(grand.vendas/grand.reunioes*100):0;
+  const vendasReal = DATA.vendasTotalReal!=null ? DATA.vendasTotalReal : grand.vendas;
+  const cv=grand.reunioes>0?Math.round(vendasReal/grand.reunioes*100):0;
 
   document.getElementById('time-kpis').innerHTML=`
     <div class="kpi" style="border-color:rgba(124,106,255,0.2)"><div class="kpi-label">Agendamentos</div><div class="kpi-val c-accent">${grand.agend}</div><div class="kpi-sub">no mês</div></div>
     <div class="kpi" style="border-color:rgba(0,212,170,0.2)"><div class="kpi-label">Reuniões realizadas</div><div class="kpi-val c-teal">${grand.reunioes}</div><div class="kpi-sub">no mês</div></div>
-    <div class="kpi" style="border-color:rgba(34,212,124,0.2)"><div class="kpi-label">Vendas fechadas</div><div class="kpi-val c-green">${grand.vendas}</div><div class="kpi-sub">conversão: ${cv}%</div></div>
+    <div class="kpi" style="border-color:rgba(34,212,124,0.2)"><div class="kpi-label">Vendas fechadas</div><div class="kpi-val c-green">${vendasReal}</div><div class="kpi-sub">conversão: ${cv}%</div></div>
     <div class="kpi" style="border-color:rgba(255,91,91,0.15)"><div class="kpi-label">No-show</div><div class="kpi-val ${grand.noshow>0?'c-red':'c-muted'}">${grand.noshow}</div><div class="kpi-sub">de ${grand.reunioes} reuniões</div></div>`;
 
   document.getElementById('team-cards').innerHTML=vendedores.map((v,i)=>{
