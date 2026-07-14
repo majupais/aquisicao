@@ -173,6 +173,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div id="fat-rows"></div>
       <div class="fat-foot" id="fat-foot"></div>
     </div>
+    <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin:24px 0 12px">Por semana</div>
+    <div class="weeks-grid" id="fat-weeks"></div>
   </div>
 
   <!-- TIME -->
@@ -244,8 +246,12 @@ async function loadData(){
   document.getElementById('err-bar').style.display='none';
   const erros=[];
 
-  try{ DATA.fat=parseFat((await fetchSheet(MES_ATUAL.faturamento)).table); }
-  catch(e){ erros.push('Faturamento: '+e.message); DATA.fat=demoFat(); }
+  try{
+    const tableFat=(await fetchSheet(MES_ATUAL.faturamento)).table;
+    DATA.fat=parseFat(tableFat);
+    DATA.fatSemanal=parseFatSemanal(tableFat);
+  }
+  catch(e){ erros.push('Faturamento: '+e.message); DATA.fat=demoFat(); DATA.fatSemanal=[]; }
 
   try{
     if(MES_ATUAL.sdr){
@@ -280,6 +286,35 @@ function parseFat(table){
     out.push({nome,meta,acum,vendido,pct:meta>0?(acum/meta)*100:0});
   }
   return out.length?out:demoFat();
+}
+
+/* Lê os blocos semanais (Meta/Vendido/Faturamento) a partir da coluna K (índice 10),
+   detectando quantas semanas existem pelo cabeçalho de cada bloco de 3 colunas */
+function parseFatSemanal(table){
+  const rows=table.rows||[];
+  const cols=table.cols||[];
+  const blocos=[];
+  let ci=10, n=1;
+  while(ci<cols.length){
+    const label=(cols[ci]&&cols[ci].label)?String(cols[ci].label).trim():'';
+    blocos.push({idx:ci, label: label||('Semana '+n)});
+    ci+=3; n++;
+  }
+  if(!blocos.length) return [];
+
+  return blocos.map(b=>{
+    let meta=0, vendido=0, faturamento=0;
+    rows.forEach(row=>{
+      if(!row.c||!row.c[0]||!row.c[0].v) return;
+      const nome=String(row.c[0].v).trim();
+      if(/total|grandes|descri|instru/i.test(nome)) return;
+      const getV=i=>{const c=row.c[i];return c?(c.v!=null?c.v:parseBRL(c.f||'')):0;};
+      meta+=parseBRL(getV(b.idx));
+      vendido+=parseBRL(getV(b.idx+1));
+      faturamento+=parseBRL(getV(b.idx+2));
+    });
+    return {label:b.label, meta, vendido, faturamento, pct: meta>0?(faturamento/meta)*100:0};
+  });
 }
 
 function parseCom(table){
@@ -432,6 +467,20 @@ function renderFat(){
 
   const tV=fat.reduce((a,p)=>a+p.vendido,0);
   document.getElementById('fat-foot').innerHTML=`<span>Total</span><span class="c-teal">${fmtBRL(tV)}</span><span class="${pctC(tP)}">${fmtBRL(tA)}</span><span class="c-muted">${fmtBRL(tM)}</span><span class="${pctC(tP)}">${tP.toFixed(1)}%</span>`;
+
+  const semanas=DATA.fatSemanal||[];
+  document.getElementById('fat-weeks').innerHTML=semanas.map(s=>{
+    const empty=s.meta===0&&s.vendido===0&&s.faturamento===0;
+    return `<div class="week-card" style="opacity:${empty?0.4:1}">
+      <div class="week-label-title">${s.label}</div>
+      <div class="week-nums">
+        <div class="week-num-item"><div class="wn-label">Meta</div><div class="wn-val c-muted">${fmtBRL(s.meta)}</div></div>
+        <div class="week-num-item"><div class="wn-label">Vendido</div><div class="wn-val c-teal">${fmtBRL(s.vendido)}</div></div>
+        <div class="week-num-item"><div class="wn-label">Faturamento</div><div class="wn-val ${pctC(s.pct)}">${fmtBRL(s.faturamento)}</div></div>
+        <div class="week-num-item"><div class="wn-label">% da meta</div><div class="wn-val ${pctC(s.pct)}">${s.pct.toFixed(1)}%</div></div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 /* ── TIME ── */
