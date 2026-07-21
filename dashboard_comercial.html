@@ -246,7 +246,7 @@ function goTo(page){
 const fmtBRL=v=>v==null||isNaN(v)?'R$ —':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const parseBRL=s=>{if(s==null||s==='')return 0;if(typeof s==='number')return s;return parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;};
 const pctC=p=>p<=85?'c-red':p<=99?'c-amber':p<=109?'c-green':'c-blue';
-const pctBar=p=>p>=100?'var(--green)':p>=60?'var(--teal)':p>=30?'var(--amber)':'var(--red)';
+const pctBar=p=>p<=85?'var(--red)':p<=99?'var(--amber)':p<=109?'var(--green)':'var(--blue)';
 const totV=v=>v.semanas.reduce((a,s)=>({ligfeitas:a.ligfeitas+(s.ligfeitas||0),ligatend:a.ligatend+(s.ligatend||0),agend:a.agend+s.agend,reunioes:a.reunioes+s.reunioes,noshow:a.noshow+s.noshow,vendas:a.vendas+s.vendas,indicacoes:a.indicacoes+(s.indicacoes||0)}),{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0});
 const convRate=t=>t.reunioes>0?Math.round(t.vendas/t.reunioes*100)+'%':'—';
 
