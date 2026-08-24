@@ -505,10 +505,10 @@ function renderFat(){
   document.getElementById('ritmo-kpis').innerHTML=`
     <div class="kpi"><div class="kpi-label">Dias úteis no mês</div><div class="kpi-val c-muted">${r.diasUteisMes}</div><div class="kpi-sub">${MES_ATUAL.label}</div></div>
     <div class="kpi"><div class="kpi-label">Dias úteis decorridos</div><div class="kpi-val">${decorridosVal}</div><div class="kpi-sub">${decorridosSub}</div></div>
-    <div class="kpi" style="border-color:rgba(124,106,255,0.2)"><div class="kpi-label">Meta esperada até agora</div><div class="kpi-val c-accent">${fmtBRL(metaEsperada)}</div><div class="kpi-sub">${fmtBRL(metaPorDiaUtil)}/dia útil</div></div>
+    <div class="kpi"><div class="kpi-label">Meta esperada até agora</div><div class="kpi-val">${fmtBRL(metaEsperada)}</div><div class="kpi-sub">${fmtBRL(metaPorDiaUtil)}/dia útil</div></div>
     <div class="kpi" style="border-color:${pctBorder(pctRitmo)}"><div class="kpi-label">Meta realizada até agora</div><div class="kpi-val ${pctC(pctRitmo)}">${fmtBRL(tA)}</div><div class="kpi-sub">acumulado do mês</div></div>
     <div class="kpi" style="border-color:${pctBorder(pctRitmo)}"><div class="kpi-label">Percentual da meta</div><div class="kpi-val ${pctC(pctRitmo)}">${pctRitmo.toFixed(1)}%</div><div class="kpi-sub">do esperado até agora</div></div>
-    <div class="kpi" style="border-color:rgba(255,184,48,0.2)"><div class="kpi-label">Ritmo esperado</div><div class="kpi-val c-amber">${fmtBRL(necessarioPorDiaUtil)}</div><div class="kpi-sub">por dia útil · ${ritmoSub}</div></div>`;
+    <div class="kpi"><div class="kpi-label">Ritmo esperado</div><div class="kpi-val">${fmtBRL(necessarioPorDiaUtil)}</div><div class="kpi-sub">por dia útil · ${ritmoSub}</div></div>`;
 
   document.getElementById('fat-rows').innerHTML=fat.map(p=>`
     <div class="fat-row">
