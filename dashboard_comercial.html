@@ -238,7 +238,7 @@ function goTo(page){
 const FERIADOS = {
   2026: ['2026-01-01','2026-02-16','2026-02-17','2026-04-03','2026-04-21',
          '2026-05-01','2026-06-04','2026-07-09','2026-08-12','2026-09-07','2026-10-12','2026-11-02',
-         '2026-11-15','2026-11-20','2026-12-08','2026-12-25'],
+         '2026-11-15','2026-11-20','2026-12-25'],
 };
 
 function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -297,6 +297,7 @@ const fmtBRL=v=>v==null||isNaN(v)?'R$ —':'R$ '+Number(v).toLocaleString('pt-BR
 const parseBRL=s=>{if(s==null||s==='')return 0;if(typeof s==='number')return s;return parseFloat(String(s).replace(/\./g,'').replace(',','.').replace(/[^\d.-]/g,''))||0;};
 const pctC=p=>p>=110?'c-blue':p>=100?'c-green':p>=85?'c-amber':'c-red';
 const pctBar=p=>p>=110?'var(--blue)':p>=100?'var(--green)':p>=85?'var(--amber)':'var(--red)';
+const pctBorder=p=>p>=110?'rgba(59,158,255,0.2)':p>=100?'rgba(34,212,124,0.2)':p>=85?'rgba(255,184,48,0.2)':'rgba(255,91,91,0.15)';
 const totV=v=>v.semanas.reduce((a,s)=>({ligfeitas:a.ligfeitas+(s.ligfeitas||0),ligatend:a.ligatend+(s.ligatend||0),agend:a.agend+s.agend,reunioes:a.reunioes+s.reunioes,noshow:a.noshow+s.noshow,vendas:a.vendas+s.vendas,indicacoes:a.indicacoes+(s.indicacoes||0)}),{ligfeitas:0,ligatend:0,agend:0,reunioes:0,noshow:0,vendas:0,indicacoes:0});
 const convRate=t=>t.reunioes>0?Math.round(t.vendas/t.reunioes*100)+'%':'—';
 
@@ -480,9 +481,9 @@ function renderFat(){
   const top=fat.reduce((a,b)=>b.acum>a.acum?b:a,fat[0]||{nome:'—',acum:0});
 
   document.getElementById('fat-kpis').innerHTML=`
-    <div class="kpi" style="border-color:rgba(34,212,124,0.2)"><div class="kpi-label">Acumulado total</div><div class="kpi-val c-green">${fmtBRL(tA)}</div><div class="kpi-sub">${tP.toFixed(1)}% da meta</div></div>
+    <div class="kpi" style="border-color:${pctBorder(tP)}"><div class="kpi-label">Acumulado total</div><div class="kpi-val ${pctC(tP)}">${fmtBRL(tA)}</div><div class="kpi-sub">${tP.toFixed(1)}% da meta</div></div>
     <div class="kpi"><div class="kpi-label">Meta mensal</div><div class="kpi-val c-muted">${fmtBRL(tM)}</div><div class="kpi-sub">todos os produtos</div></div>
-    <div class="kpi" style="border-color:rgba(124,106,255,0.2)"><div class="kpi-label">Falta para a meta</div><div class="kpi-val c-accent">${fmtBRL(Math.max(0,tM-tA))}</div><div class="kpi-sub">${(100-Math.min(tP,100)).toFixed(1)}% restante</div></div>
+    <div class="kpi" style="border-color:${pctBorder(tP)}"><div class="kpi-label">Falta para a meta</div><div class="kpi-val ${pctC(tP)}">${fmtBRL(Math.max(0,tM-tA))}</div><div class="kpi-sub">${(100-Math.min(tP,100)).toFixed(1)}% restante</div></div>
     <div class="kpi" style="border-color:rgba(0,212,170,0.2)"><div class="kpi-label">Melhor produto</div><div class="kpi-val c-teal" style="font-size:16px;padding-top:6px">${top.nome}</div><div class="kpi-sub">${fmtBRL(top.acum)}</div></div>`;
 
   // ── RITMO POR DIA ÚTIL ──
@@ -505,8 +506,8 @@ function renderFat(){
     <div class="kpi"><div class="kpi-label">Dias úteis no mês</div><div class="kpi-val c-muted">${r.diasUteisMes}</div><div class="kpi-sub">${MES_ATUAL.label}</div></div>
     <div class="kpi"><div class="kpi-label">Dias úteis decorridos</div><div class="kpi-val">${decorridosVal}</div><div class="kpi-sub">${decorridosSub}</div></div>
     <div class="kpi" style="border-color:rgba(124,106,255,0.2)"><div class="kpi-label">Meta esperada até agora</div><div class="kpi-val c-accent">${fmtBRL(metaEsperada)}</div><div class="kpi-sub">${fmtBRL(metaPorDiaUtil)}/dia útil</div></div>
-    <div class="kpi" style="border-color:rgba(0,212,170,0.2)"><div class="kpi-label">Meta realizada até agora</div><div class="kpi-val c-teal">${fmtBRL(tA)}</div><div class="kpi-sub">acumulado do mês</div></div>
-    <div class="kpi" style="border-color:${pctRitmo>=100?'rgba(34,212,124,0.2)':'rgba(255,91,91,0.15)'}"><div class="kpi-label">Percentual da meta</div><div class="kpi-val ${pctC(pctRitmo)}">${pctRitmo.toFixed(1)}%</div><div class="kpi-sub">do esperado até agora</div></div>
+    <div class="kpi" style="border-color:${pctBorder(pctRitmo)}"><div class="kpi-label">Meta realizada até agora</div><div class="kpi-val ${pctC(pctRitmo)}">${fmtBRL(tA)}</div><div class="kpi-sub">acumulado do mês</div></div>
+    <div class="kpi" style="border-color:${pctBorder(pctRitmo)}"><div class="kpi-label">Percentual da meta</div><div class="kpi-val ${pctC(pctRitmo)}">${pctRitmo.toFixed(1)}%</div><div class="kpi-sub">do esperado até agora</div></div>
     <div class="kpi" style="border-color:rgba(255,184,48,0.2)"><div class="kpi-label">Ritmo esperado</div><div class="kpi-val c-amber">${fmtBRL(necessarioPorDiaUtil)}</div><div class="kpi-sub">por dia útil · ${ritmoSub}</div></div>`;
 
   document.getElementById('fat-rows').innerHTML=fat.map(p=>`
