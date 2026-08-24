@@ -168,6 +168,15 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     <div class="page-title">Faturamento</div>
     <div class="page-sub">Acumulado mensal por produto</div>
     <div class="kpi-row kpi-row-4" id="fat-kpis"></div>
+
+    <div class="card" style="padding:20px 22px;margin-bottom:24px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+        <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase">Ritmo do mês (dias úteis)</div>
+        <div id="ritmo-semana-passada" style="font-size:12px;color:var(--muted)"></div>
+      </div>
+      <div class="kpi-row kpi-row-4" id="ritmo-kpis" style="margin-bottom:0"></div>
+    </div>
+
     <div class="card">
       <div class="fat-head"><span>Produto</span><span>Vendido</span><span>Acumulado (fat.)</span><span>Meta mês</span><span>% meta</span></div>
       <div id="fat-rows"></div>
@@ -220,6 +229,67 @@ function goTo(page){
   const el=document.getElementById('page-'+page);
   if(el) el.classList.add('active');
   window.scrollTo(0,0);
+}
+
+/* ── FERIADOS ──────────────────────────────────────────────────────────
+   Nacionais + facultativos comumente observados pela empresa (Carnaval,
+   Corpus Christi). Formato AAAA-MM-DD. Adicione o próximo ano aqui
+   quando o calendário for divulgado (geralmente fim do ano anterior). */
+const FERIADOS = {
+  2026: ['2026-01-01','2026-02-16','2026-02-17','2026-04-03','2026-04-21',
+         '2026-05-01','2026-06-04','2026-09-07','2026-10-12','2026-11-02',
+         '2026-11-15','2026-11-20','2026-12-25'],
+};
+
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function isFeriado(d){ return (FERIADOS[d.getFullYear()]||[]).includes(ymd(d)); }
+function isDiaUtil(d){ const dow=d.getDay(); return dow!==0 && dow!==6 && !isFeriado(d); }
+
+/* Conta dias úteis entre duas datas, inclusive nas duas pontas */
+function diasUteisEntre(ini, fim){
+  const d=new Date(ini.getFullYear(),ini.getMonth(),ini.getDate());
+  const f=new Date(fim.getFullYear(),fim.getMonth(),fim.getDate());
+  if(d>f) return 0;
+  let c=0;
+  while(d<=f){ if(isDiaUtil(d)) c++; d.setDate(d.getDate()+1); }
+  return c;
+}
+
+function segundaFeiraDaSemana(d){
+  const dd=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  const dow=dd.getDay();
+  const diff = dow===0 ? -6 : 1-dow;
+  dd.setDate(dd.getDate()+diff);
+  return dd;
+}
+
+function diaUtilLabel(n){ return n===1 ? '1 dia útil' : `${n} dias úteis`; }
+
+/* Calcula o ritmo do mês selecionado (MES_ATUAL) frente à data real de hoje,
+   e também os dias úteis da semana anterior (para referência de segunda-feira) */
+function calcRitmo(){
+  const hoje = new Date();
+  const primeiroDia = new Date(MES_ATUAL.ano, MES_ATUAL.mes-1, 1);
+  const ultimoDia   = new Date(MES_ATUAL.ano, MES_ATUAL.mes, 0);
+  const diasUteisMes = diasUteisEntre(primeiroDia, ultimoDia);
+
+  const inicioMesSelec = new Date(MES_ATUAL.ano, MES_ATUAL.mes-1, 1);
+  const inicioMesHoje  = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+
+  let diasUteisDecorridos, status;
+  if(inicioMesSelec > inicioMesHoje){ diasUteisDecorridos=0; status='futuro'; }
+  else if(inicioMesSelec < inicioMesHoje){ diasUteisDecorridos=diasUteisMes; status='encerrado'; }
+  else { diasUteisDecorridos=diasUteisEntre(primeiroDia, hoje); status='andamento'; }
+
+  const diasUteisRestantes = Math.max(0, diasUteisMes - diasUteisDecorridos);
+
+  // Semana anterior — sempre relativa à data real de hoje, independe do mês selecionado no filtro
+  const segAtual = segundaFeiraDaSemana(hoje);
+  const segAnt = new Date(segAtual); segAnt.setDate(segAnt.getDate()-7);
+  const domAnt = new Date(segAnt); domAnt.setDate(domAnt.getDate()+6);
+  const diasUteisSemanaAnterior = diasUteisEntre(segAnt, domAnt);
+
+  return {diasUteisMes, diasUteisDecorridos, diasUteisRestantes, status, diasUteisSemanaAnterior};
 }
 
 /* ── HELPERS ── */
@@ -414,6 +484,29 @@ function renderFat(){
     <div class="kpi"><div class="kpi-label">Meta mensal</div><div class="kpi-val c-muted">${fmtBRL(tM)}</div><div class="kpi-sub">todos os produtos</div></div>
     <div class="kpi" style="border-color:rgba(124,106,255,0.2)"><div class="kpi-label">Falta para a meta</div><div class="kpi-val c-accent">${fmtBRL(Math.max(0,tM-tA))}</div><div class="kpi-sub">${(100-Math.min(tP,100)).toFixed(1)}% restante</div></div>
     <div class="kpi" style="border-color:rgba(0,212,170,0.2)"><div class="kpi-label">Melhor produto</div><div class="kpi-val c-teal" style="font-size:16px;padding-top:6px">${top.nome}</div><div class="kpi-sub">${fmtBRL(top.acum)}</div></div>`;
+
+  // ── RITMO POR DIA ÚTIL ──
+  const r = calcRitmo();
+  const metaPorDiaUtil = r.diasUteisMes>0 ? tM/r.diasUteisMes : 0;
+  const metaEsperada = metaPorDiaUtil * r.diasUteisDecorridos;
+  const diff = tA - metaEsperada;
+  const necessarioPorDiaUtil = r.diasUteisRestantes>0 ? Math.max(0,tM-tA)/r.diasUteisRestantes : 0;
+
+  const decorridosVal = r.status==='futuro' ? `0 de ${r.diasUteisMes}` : `${r.diasUteisDecorridos} de ${r.diasUteisMes}`;
+  const decorridosSub = r.status==='futuro' ? 'mês ainda não começou' : r.status==='encerrado' ? 'mês encerrado' : 'até hoje';
+
+  const diffCls = diff>=0?'c-green':'c-red';
+  const diffLabel = (diff>=0?'+ ':'− ')+fmtBRL(Math.abs(diff));
+  const diffSub = r.status==='encerrado' ? 'resultado final do mês' : r.diasUteisRestantes>0 ? `precisa de ${fmtBRL(necessarioPorDiaUtil)}/dia útil restante` : 'sem dias úteis restantes no mês';
+
+  document.getElementById('ritmo-semana-passada').innerHTML=
+    `Semana passada: <strong style="color:var(--text)">${diaUtilLabel(r.diasUteisSemanaAnterior)}</strong>`;
+
+  document.getElementById('ritmo-kpis').innerHTML=`
+    <div class="kpi"><div class="kpi-label">Dias úteis no mês</div><div class="kpi-val c-muted">${r.diasUteisMes}</div><div class="kpi-sub">${MES_ATUAL.label}</div></div>
+    <div class="kpi"><div class="kpi-label">Dias úteis decorridos</div><div class="kpi-val">${decorridosVal}</div><div class="kpi-sub">${decorridosSub}</div></div>
+    <div class="kpi" style="border-color:rgba(124,106,255,0.2)"><div class="kpi-label">Meta esperada até agora</div><div class="kpi-val c-accent">${fmtBRL(metaEsperada)}</div><div class="kpi-sub">${fmtBRL(metaPorDiaUtil)}/dia útil</div></div>
+    <div class="kpi" style="border-color:${diff>=0?'rgba(34,212,124,0.2)':'rgba(255,91,91,0.15)'}"><div class="kpi-label">Vs. ritmo esperado</div><div class="kpi-val ${diffCls}">${diffLabel}</div><div class="kpi-sub">${diffSub}</div></div>`;
 
   document.getElementById('fat-rows').innerHTML=fat.map(p=>`
     <div class="fat-row">
