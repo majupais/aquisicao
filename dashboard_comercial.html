@@ -58,6 +58,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 /* KPI */
 .kpi-row{display:grid;gap:14px;margin-bottom:24px}
 .kpi-row-4{grid-template-columns:repeat(4,1fr)}
+.kpi-row-5{grid-template-columns:repeat(5,1fr)}
 .kpi-row-3{grid-template-columns:repeat(3,1fr)}
 .kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px}
 .kpi-label{font-size:11px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;color:var(--dim);margin-bottom:8px}
@@ -174,7 +175,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
         <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase">Ritmo do mês (dias úteis)</div>
         <div id="ritmo-semana-passada" style="font-size:12px;color:var(--muted)"></div>
       </div>
-      <div class="kpi-row kpi-row-4" id="ritmo-kpis" style="margin-bottom:0"></div>
+      <div class="kpi-row kpi-row-5" id="ritmo-kpis" style="margin-bottom:0"></div>
     </div>
 
     <div class="card">
@@ -237,8 +238,8 @@ function goTo(page){
    quando o calendário for divulgado (geralmente fim do ano anterior). */
 const FERIADOS = {
   2026: ['2026-01-01','2026-02-16','2026-02-17','2026-04-03','2026-04-21',
-         '2026-05-01','2026-06-04','2026-09-07', '2026-08-12', '2026-09-07','2026-10-12','2026-11-02',
-         '2026-11-15','2026-11-20','2026-12-08','2026-12-25'],
+         '2026-05-01','2026-06-04','2026-09-07','2026-10-12','2026-11-02',
+         '2026-11-15','2026-11-20','2026-12-25'],
 };
 
 function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
@@ -499,6 +500,8 @@ function renderFat(){
   const diffLabel = (diff>=0?'+ ':'− ')+fmtBRL(Math.abs(diff));
   const diffSub = r.status==='encerrado' ? 'resultado final do mês' : r.diasUteisRestantes>0 ? `precisa de ${fmtBRL(necessarioPorDiaUtil)}/dia útil restante` : 'sem dias úteis restantes no mês';
 
+  const pctRitmo = metaEsperada>0 ? (tA/metaEsperada)*100 : (tA>0?999:0);
+
   document.getElementById('ritmo-semana-passada').innerHTML=
     `Semana passada: <strong style="color:var(--text)">${diaUtilLabel(r.diasUteisSemanaAnterior)}</strong>`;
 
@@ -506,7 +509,8 @@ function renderFat(){
     <div class="kpi"><div class="kpi-label">Dias úteis no mês</div><div class="kpi-val c-muted">${r.diasUteisMes}</div><div class="kpi-sub">${MES_ATUAL.label}</div></div>
     <div class="kpi"><div class="kpi-label">Dias úteis decorridos</div><div class="kpi-val">${decorridosVal}</div><div class="kpi-sub">${decorridosSub}</div></div>
     <div class="kpi" style="border-color:rgba(124,106,255,0.2)"><div class="kpi-label">Meta esperada até agora</div><div class="kpi-val c-accent">${fmtBRL(metaEsperada)}</div><div class="kpi-sub">${fmtBRL(metaPorDiaUtil)}/dia útil</div></div>
-    <div class="kpi" style="border-color:${diff>=0?'rgba(34,212,124,0.2)':'rgba(255,91,91,0.15)'}"><div class="kpi-label">Vs. ritmo esperado</div><div class="kpi-val ${diffCls}">${diffLabel}</div><div class="kpi-sub">${diffSub}</div></div>`;
+    <div class="kpi" style="border-color:${diff>=0?'rgba(34,212,124,0.2)':'rgba(255,91,91,0.15)'}"><div class="kpi-label">Vs. ritmo esperado</div><div class="kpi-val ${diffCls}">${diffLabel}</div><div class="kpi-sub">${diffSub}</div></div>
+    <div class="kpi" style="border-color:rgba(0,212,170,0.2)"><div class="kpi-label">% da meta (ritmo)</div><div class="kpi-val ${pctC(pctRitmo)}">${pctRitmo.toFixed(1)}%</div><div class="kpi-sub">do esperado até agora</div></div>`;
 
   document.getElementById('fat-rows').innerHTML=fat.map(p=>`
     <div class="fat-row">
