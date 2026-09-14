@@ -348,8 +348,10 @@ function parseFat(table){
     if(/total|grandes|descri|instru/i.test(nome)) continue;
     const getV=i=>{const c=row.c[i];return c?(c.v!=null?c.v:parseBRL(c.f||'')):0;};
     const meta=parseBRL(getV(5)), acum=parseBRL(getV(6)), vendido=parseBRL(getV(7));
-    if(meta===0&&acum===0) continue;
-    out.push({nome,meta,acum,vendido,pct:meta>0?(acum/meta)*100:0});
+    if(meta===0&&acum===0&&vendido===0) continue;
+    // Linhas sem meta cadastrada (ex: "Receitas Extras") só têm o valor vendido —
+    // não entram no acumulado/meta do mês, mas aparecem na tabela e no total vendido.
+    out.push({nome,meta,acum,vendido,pct:meta>0?(acum/meta)*100:0,semMeta:meta===0&&acum===0});
   }
   return out.length?out:demoFat();
 }
@@ -518,11 +520,12 @@ function renderFat(){
         <div style="font-size:13px;font-weight:500;color:${p.vendido>0?'var(--teal)':'var(--dim)'}">${p.vendido>0?fmtBRL(p.vendido):'—'}</div>
         ${p.vendido>0&&p.acum>0?`<div style="font-size:10px;color:var(--dim);margin-top:2px">fat. ${Math.round(p.acum/p.vendido*100)}% do vendido</div>`:''}
       </div>
-      <div class="fat-acum ${pctC(p.pct)}">${fmtBRL(p.acum)}</div>
-      <div class="fat-meta">${fmtBRL(p.meta)}</div>
+      <div class="fat-acum ${p.semMeta?'c-dim':pctC(p.pct)}">${p.semMeta?'—':fmtBRL(p.acum)}</div>
+      <div class="fat-meta">${p.semMeta?'—':fmtBRL(p.meta)}</div>
       <div class="fat-pct-cell">
-        <span class="fat-pct ${pctC(p.pct)}">${p.pct.toFixed(1)}%</span>
-        <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(p.pct,100)}%;background:${pctBar(p.pct)}"></div></div>
+        ${p.semMeta
+          ? `<span class="fat-pct c-dim">—</span>`
+          : `<span class="fat-pct ${pctC(p.pct)}">${p.pct.toFixed(1)}%</span><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(p.pct,100)}%;background:${pctBar(p.pct)}"></div></div>`}
       </div>
     </div>`).join('');
 
