@@ -65,10 +65,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .kpi-sub{font-size:12px;color:var(--muted)}
 /* FAT TABLE */
 .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden}
-.fat-head{display:grid;grid-template-columns:1fr 150px 150px 150px 90px;padding:11px 20px;background:var(--surface2);border-bottom:1px solid var(--border)}
+.fat-head{display:grid;grid-template-columns:1fr 160px 160px 130px;padding:11px 20px;background:var(--surface2);border-bottom:1px solid var(--border)}
 .fat-head span{font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--dim)}
 .fat-head span:not(:first-child){text-align:right}
-.fat-row{display:grid;grid-template-columns:1fr 150px 150px 150px 90px;padding:13px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background 0.12s}
+.fat-row{display:grid;grid-template-columns:1fr 160px 160px 130px;padding:13px 20px;border-bottom:1px solid var(--border);align-items:center;transition:background 0.12s}
 .fat-row:last-child{border-bottom:none}
 .fat-row:hover{background:var(--surface2)}
 .fat-acum{text-align:right;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500}
@@ -77,7 +77,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .fat-pct{font-size:12px;font-weight:500}
 .bar-bg{width:70px;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden}
 .bar-fill{height:100%;border-radius:2px}
-.fat-foot{display:grid;grid-template-columns:1fr 150px 150px 150px 90px;padding:14px 20px;background:var(--surface2);border-top:2px solid var(--border2)}
+.fat-foot{display:grid;grid-template-columns:1fr 160px 160px 130px;padding:14px 20px;background:var(--surface2);border-top:2px solid var(--border2)}
 .fat-foot span{font-size:13px;font-weight:600}
 .fat-foot span:not(:first-child){text-align:right}
 /* TEAM CARDS */
@@ -195,7 +195,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
     </div>
 
     <div class="card">
-      <div class="fat-head"><span>Produto</span><span>Vendido</span><span>Acumulado (fat.)</span><span>Meta mês</span><span>% meta</span></div>
+      <div class="fat-head"><span>Produto</span><span>Vendido</span><span>Acumulado (fat.)</span><span>Participação</span></div>
       <div id="fat-rows"></div>
       <div class="fat-foot" id="fat-foot"></div>
     </div>
@@ -216,8 +216,11 @@ const SHEET_ID  = '19Sb8OnFC4fdCvIFP0_eu7xxccS0o07_fQQRl-xSi4HM';
 // "faturamento" = aba do faturamento por produto (planilha Dashboard Aquisição - Gestão)
 // "vendedoras"  = aba (nesta mesma planilha) com o vendido por vendedora + linha "Taxa"
 //                 (meses sem essa chave mostram o aviso "sem dados por vendedora")
+// "metaMes"      = META COMERCIAL ÚNICA do mês (não existe mais meta por produto).
+//                 O dashboard tenta ler a meta da célula F3 da aba (linha "Descrição", coluna Meta);
+//                 se não achar, usa este valor. Meses antigos sem metaMes somam as metas por produto.
 const MESES = [
-  { label: 'Outubro 2026',  faturamento: 'Faturamento Outubro26',  vendedoras: 'Vendedoras Outubro26', mes:10, ano:2026 },
+  { label: 'Outubro 2026',  faturamento: 'Faturamento Outubro26',  vendedoras: 'Vendedoras Outubro26', metaMes:4000, mes:10, ano:2026 },
   { label: 'Setembro 2026', faturamento: 'Faturamento Setembro26', mes:9, ano:2026 },
   { label: 'Agosto 2026',   faturamento: 'Faturamento Agosto26',   mes:8, ano:2026 },
   { label: 'Julho 2026',    faturamento: 'Faturamento Julho26',    mes:7, ano:2026 },
@@ -350,18 +353,23 @@ async function loadData(){
 /* ── PARSERS ── */
 function parseFat(table){
   const out=[];
+  let metaPlanilha=0, somaMetasProduto=0;
   for(const row of (table.rows||[])){
-    if(!row.c||!row.c[0]||!row.c[0].v) continue;
+    if(!row.c||!row.c[0]||row.c[0].v==null) continue;
     const nome=String(row.c[0].v).trim();
-    if(/total|grandes|descri|instru/i.test(nome)) continue;
     const getV=i=>{const c=row.c[i];return c?(c.v!=null?c.v:parseBRL(c.f||'')):0;};
-    const meta=parseBRL(getV(5)), acum=parseBRL(getV(6)), vendido=parseBRL(getV(7));
-    if(meta===0&&acum===0&&vendido===0) continue;
-    // Linhas sem meta cadastrada (ex: "Receitas Extras") só têm o valor vendido —
-    // não entram no acumulado/meta do mês, mas aparecem na tabela e no total vendido.
-    out.push({nome,meta,acum,vendido,pct:meta>0?(acum/meta)*100:0,semMeta:meta===0&&acum===0});
+    // Linha "Descrição" (linha 3) traz a meta comercial do mês na coluna F
+    if(/descri/i.test(nome)){ const m=parseBRL(getV(5)); if(m>0) metaPlanilha=m; continue; }
+    if(!nome||/total|grandes|instru/i.test(nome)) continue;
+    const metaProd=parseBRL(getV(5)), acum=parseBRL(getV(6)), vendido=parseBRL(getV(7));
+    somaMetasProduto+=metaProd;
+    if(acum===0&&vendido===0) continue;
+    out.push({nome,acum,vendido});
   }
-  return out.length?out:demoFat();
+  const lista=out.length?out:demoFat();
+  // Prioridade: célula F3 da planilha → metaMes do MESES → soma das metas por produto (meses antigos)
+  lista.metaMes = metaPlanilha || MES_ATUAL.metaMes || somaMetasProduto || (out.length?0:4000);
+  return lista;
 }
 
 /* ── PARSER VENDEDORAS: aba "Vendedoras MêsAA" ──
@@ -417,7 +425,7 @@ function parseVend(table){
 }
 
 /* ── DEMO ── */
-function demoFat(){return [{nome:'Pontomais (40%)',meta:2000,acum:1217.46,pct:60.87},{nome:'VR Benefícios (1%)',meta:800,acum:1473.07,pct:184},{nome:'Suporte Aquisição',meta:3000,acum:720,pct:24},{nome:'Suporte Permanência',meta:3000,acum:240,pct:8},{nome:'Moskit (30%)',meta:1400,acum:0,pct:0},{nome:'VExpenses (30%)',meta:200,acum:0,pct:0},{nome:'Todos de Benefícios',meta:500,acum:50,pct:10},{nome:'Seven Saúde B2B',meta:40000,acum:798.40,pct:2}];}
+function demoFat(){const d=[{nome:'Intermediador',acum:887.10,vendido:887.10},{nome:'VR Benefícios',acum:764.04,vendido:76403.56},{nome:'Todos de Benefícios',acum:441.53,vendido:44152.96}];d.metaMes=4000;return d;}
 
 
 function avatarHtml(v,sz){
@@ -434,14 +442,14 @@ function renderAll(){
 /* ── FAT ── */
 function renderFat(){
   const fat=DATA.fat;
-  let tM=0,tA=0;
-  fat.forEach(p=>{tM+=p.meta;tA+=p.acum;});
+  const tM=fat.metaMes||0;
+  const tA=fat.reduce((a,p)=>a+p.acum,0);
   const tP=tM>0?(tA/tM)*100:0;
   const top=fat.reduce((a,b)=>b.acum>a.acum?b:a,fat[0]||{nome:'—',acum:0});
 
   document.getElementById('fat-kpis').innerHTML=`
     <div class="kpi" style="border-color:${pctBorder(tP)}"><div class="kpi-label">Acumulado total</div><div class="kpi-val ${pctC(tP)}">${fmtBRL(tA)}</div><div class="kpi-sub">${tP.toFixed(1)}% da meta</div></div>
-    <div class="kpi"><div class="kpi-label">Meta mensal</div><div class="kpi-val c-muted">${fmtBRL(tM)}</div><div class="kpi-sub">todos os produtos</div></div>
+    <div class="kpi"><div class="kpi-label">Meta mensal</div><div class="kpi-val c-muted">${fmtBRL(tM)}</div><div class="kpi-sub">meta comercial do mês</div></div>
     <div class="kpi" style="border-color:${pctBorder(tP)}"><div class="kpi-label">Falta para a meta</div><div class="kpi-val ${pctC(tP)}">${fmtBRL(Math.max(0,tM-tA))}</div><div class="kpi-sub">${(100-Math.min(tP,100)).toFixed(1)}% restante</div></div>
     <div class="kpi" style="border-color:rgba(0,212,170,0.2)"><div class="kpi-label">Melhor produto</div><div class="kpi-val c-teal" style="font-size:16px;padding-top:6px">${top.nome}</div><div class="kpi-sub">${fmtBRL(top.acum)}</div></div>`;
 
@@ -469,24 +477,26 @@ function renderFat(){
     <div class="kpi" style="border-color:${pctBorder(pctRitmo)}"><div class="kpi-label">Percentual da meta</div><div class="kpi-val ${pctC(pctRitmo)}">${pctRitmo.toFixed(1)}%</div><div class="kpi-sub">do esperado até agora</div></div>
     <div class="kpi"><div class="kpi-label">Ritmo esperado</div><div class="kpi-val">${fmtBRL(necessarioPorDiaUtil)}</div><div class="kpi-sub">por dia útil · ${ritmoSub}</div></div>`;
 
-  document.getElementById('fat-rows').innerHTML=fat.map(p=>`
+  const ordenado=[...fat].sort((a,b)=>b.acum-a.acum||b.vendido-a.vendido);
+  document.getElementById('fat-rows').innerHTML=ordenado.map(p=>{
+    const part=tA>0?(p.acum/tA)*100:0;
+    return `
     <div class="fat-row">
       <div style="font-size:13px">${p.nome}</div>
       <div style="text-align:right">
         <div style="font-size:13px;font-weight:500;color:${p.vendido>0?'var(--teal)':'var(--dim)'}">${p.vendido>0?fmtBRL(p.vendido):'—'}</div>
         ${p.vendido>0&&p.acum>0?`<div style="font-size:10px;color:var(--dim);margin-top:2px">fat. ${Math.round(p.acum/p.vendido*100)}% do vendido</div>`:''}
       </div>
-      <div class="fat-acum ${p.semMeta?'c-dim':pctC(p.pct)}">${p.semMeta?'—':fmtBRL(p.acum)}</div>
-      <div class="fat-meta">${p.semMeta?'—':fmtBRL(p.meta)}</div>
+      <div class="fat-acum ${p.acum>0?'c-teal':'c-dim'}">${p.acum>0?fmtBRL(p.acum):'—'}</div>
       <div class="fat-pct-cell">
-        ${p.semMeta
-          ? `<span class="fat-pct c-dim">—</span>`
-          : `<span class="fat-pct ${pctC(p.pct)}">${p.pct.toFixed(1)}%</span><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(p.pct,100)}%;background:${pctBar(p.pct)}"></div></div>`}
+        ${p.acum>0
+          ? `<span class="fat-pct c-muted">${part.toFixed(1)}%</span><div class="bar-bg"><div class="bar-fill" style="width:${Math.min(part,100)}%;background:var(--teal)"></div></div>`
+          : `<span class="fat-pct c-dim">—</span>`}
       </div>
-    </div>`).join('');
+    </div>`;}).join('');
 
   const tV=fat.reduce((a,p)=>a+p.vendido,0);
-  document.getElementById('fat-foot').innerHTML=`<span>Total</span><span class="c-teal">${fmtBRL(tV)}</span><span class="${pctC(tP)}">${fmtBRL(tA)}</span><span class="c-muted">${fmtBRL(tM)}</span><span class="${pctC(tP)}">${tP.toFixed(1)}%</span>`;
+  document.getElementById('fat-foot').innerHTML=`<span>Total · meta ${fmtBRL(tM)}</span><span class="c-teal">${fmtBRL(tV)}</span><span class="${pctC(tP)}">${fmtBRL(tA)}</span><span class="${pctC(tP)}">${tP.toFixed(1)}% da meta</span>`;
 }
 
 /* ── FATURAMENTO POR VENDEDORA ── */
