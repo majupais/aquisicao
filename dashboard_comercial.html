@@ -120,6 +120,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .wt-val{font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;text-align:center}
 /* FATURAMENTO POR VENDEDORA */
 .sec-title{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--dim);letter-spacing:0.08em;text-transform:uppercase;margin:28px 0 12px}
+.vend-note{font-size:12px;color:var(--muted);line-height:1.5;margin:-4px 0 14px;max-width:820px}
+.vend-note strong{color:var(--text);font-weight:600}
 .vend-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
 .vend-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;cursor:pointer;transition:transform 0.15s,border-color 0.15s}
 .vend-card:hover{transform:translateY(-2px);border-color:var(--border2)}
@@ -200,7 +202,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
       <div class="fat-foot" id="fat-foot"></div>
     </div>
 
-    <div class="sec-title">Faturamento por vendedora</div>
+    <div class="sec-title">Faturamento gerado pelas vendas do mês</div>
+    <div class="vend-note">Valor vendido por cada vendedora no mês × taxa de faturamento de cada produto. Inclui produtos fora da meta e não considera receita recorrente de meses anteriores, por isso <strong>não soma com o acumulado da meta</strong> acima.</div>
     <div id="vend-section"></div>
   </div>
 
@@ -510,7 +513,7 @@ function renderVendedoras(){
     VM.forEach((m,i)=>{
       document.getElementById('page-v'+i).innerHTML=`
         <div class="page-title">${m.nome}</div>
-        <div class="page-sub">Faturamento individual — ${MES_ATUAL.label}</div>
+        <div class="page-sub">Faturamento gerado pelas vendas — ${MES_ATUAL.label}</div>
         <div class="vend-empty">${msg}</div>`;
     });
     return;
@@ -531,9 +534,9 @@ function renderVendedoras(){
         </div>
       </div>
       <div class="vend-val" style="color:${v.total>0?v.cor:'var(--dim)'}">${fmtBRL(v.total)}</div>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">faturado · vendido ${fmtBRL(v.totalVendido)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px">gerado pelas vendas · vendido ${fmtBRL(v.totalVendido)}</div>
       <div class="vend-share">
-        <span>${share.toFixed(1).replace('.',',')}% do total das vendedoras</span>
+        <span>${share.toFixed(1).replace('.',',')}% do gerado pelas vendedoras</span>
         <div class="bar-bg"><div class="bar-fill" style="width:${Math.min(share,100)}%;background:${v.cor}"></div></div>
       </div>
     </div>`;
@@ -561,26 +564,27 @@ function renderVendedoras(){
 
     document.getElementById('page-v'+i).innerHTML=`
       <div class="page-title">${v.nome}</div>
-      <div class="page-sub">Faturamento individual — ${MES_ATUAL.label}</div>
+      <div class="page-sub">Faturamento gerado pelas vendas — ${MES_ATUAL.label}</div>
+      <div class="vend-note">Vendido no mês × taxa de faturamento de cada produto. Não soma com o acumulado da meta da empresa.</div>
       ${avisoTaxa}
       <div class="seller-hero">
         ${avatarHtml(v,58)}
         <div>
           <div class="hero-name">${v.nome}</div>
-          <div class="hero-sub">Faturado no mês: <strong style="color:${v.cor}">${fmtBRL(v.total)}</strong> · vendido ${fmtBRL(v.totalVendido)}</div>
+          <div class="hero-sub">Gerado pelas vendas: <strong style="color:${v.cor}">${fmtBRL(v.total)}</strong> · vendido ${fmtBRL(v.totalVendido)}</div>
         </div>
         <div class="hero-badges">
           <div class="hero-badge" style="background:${v.bg};color:${v.cor}">${v.produtos.length} produto${v.produtos.length!==1?'s':''}</div>
-          <div class="hero-badge" style="background:var(--surface3);color:var(--muted)">${share.toFixed(1).replace('.',',')}% do total</div>
+          <div class="hero-badge" style="background:var(--surface3);color:var(--muted)">${share.toFixed(1).replace('.',',')}% do gerado pelas vendedoras</div>
         </div>
       </div>
       <div class="kpi-row kpi-row-3" style="margin-bottom:22px">
-        <div class="kpi" style="border-color:${v.bg}"><div class="kpi-label">Faturamento total</div><div class="kpi-val" style="color:${v.total>0?v.cor:'var(--dim)'}">${fmtBRL(v.total)}</div><div class="kpi-sub">${MES_ATUAL.label}</div></div>
+        <div class="kpi" style="border-color:${v.bg}"><div class="kpi-label">Faturamento gerado</div><div class="kpi-val" style="color:${v.total>0?v.cor:'var(--dim)'}">${fmtBRL(v.total)}</div><div class="kpi-sub">${MES_ATUAL.label}</div></div>
         <div class="kpi"><div class="kpi-label">Principal produto</div><div class="kpi-val" style="font-size:16px;padding-top:6px;color:${top?v.cor:'var(--dim)'}">${top?top.nome:'—'}</div><div class="kpi-sub">${top?fmtBRL(top.valor):'sem faturamento'}</div></div>
         <div class="kpi"><div class="kpi-label">Valor vendido</div><div class="kpi-val c-muted">${fmtBRL(v.totalVendido)}</div><div class="kpi-sub">base para o faturamento</div></div>
       </div>
       <div class="card">
-        <div class="vp-head"><span>Produto</span><span>Vendido</span><span>Faturamento</span><span>% do total dela</span></div>
+        <div class="vp-head"><span>Produto</span><span>Vendido</span><span>Fat. gerado</span><span>% do total dela</span></div>
         ${linhas}
         <div class="vp-foot"><span>Total</span><span class="c-muted">${fmtBRL(v.totalVendido)}</span><span style="color:${v.cor}">${fmtBRL(v.total)}</span><span class="c-muted">100%</span></div>
       </div>`;
