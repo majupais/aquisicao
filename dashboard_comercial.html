@@ -329,7 +329,7 @@ async function loadData(){
   const erros=[];
 
   try{ DATA.fat=parseFat((await fetchSheet(MES_ATUAL.faturamento)).table); }
-  catch(e){ erros.push('Faturamento: '+e.message); DATA.fat=demoFat(); }
+  catch(e){ erros.push('Faturamento: '+e.message); DATA.fat=[]; DATA.fat.metaMes=MES_ATUAL.metaMes||0; }
 
   if(MES_ATUAL.vendedoras){
     try{ DATA.vend=parseVend((await fetchSheet(MES_ATUAL.vendedoras, SHEET_ID, true)).table); }
@@ -351,7 +351,7 @@ async function loadData(){
 
 /* ── PARSERS ── */
 function parseFat(table){
-  const out=[];
+  const out=[], zerados=[];
   let metaPlanilha=0, somaMetasProduto=0;
   for(const row of (table.rows||[])){
     if(!row.c||!row.c[0]||row.c[0].v==null) continue;
@@ -362,12 +362,13 @@ function parseFat(table){
     if(!nome||/total|grandes|instru/i.test(nome)) continue;
     const metaProd=parseBRL(getV(5)), acum=parseBRL(getV(6)), vendido=parseBRL(getV(7));
     somaMetasProduto+=metaProd;
-    if(acum===0&&vendido===0) continue;
+    if(acum===0&&vendido===0){ zerados.push({nome,acum:0,vendido:0}); continue; }
     out.push({nome,acum,vendido});
   }
-  const lista=out.length?out:demoFat();
+  // Aba lida com sucesso mas sem vendas (início do mês) → mostra os produtos zerados, nunca os dados de exemplo
+  const lista=out.length?out:zerados;
   // Prioridade: célula F3 da planilha → metaMes do MESES → soma das metas por produto (meses antigos)
-  lista.metaMes = metaPlanilha || MES_ATUAL.metaMes || somaMetasProduto || (out.length?0:4000);
+  lista.metaMes = metaPlanilha || MES_ATUAL.metaMes || somaMetasProduto || 0;
   return lista;
 }
 
@@ -485,7 +486,9 @@ function renderFat(){
     <div class="kpi"><div class="kpi-label">Ritmo esperado</div><div class="kpi-val">${fmtBRL(necessarioPorDiaUtil)}</div><div class="kpi-sub">por dia útil · ${ritmoSub}</div></div>`;
 
   const ordenado=[...fat].sort((a,b)=>b.acum-a.acum||b.vendido-a.vendido);
-  document.getElementById('fat-rows').innerHTML=ordenado.map(p=>{
+  document.getElementById('fat-rows').innerHTML=!ordenado.length
+    ? `<div class="fat-row"><div style="font-size:13px;color:var(--dim)">Nenhum produto encontrado na aba ${MES_ATUAL.faturamento}</div><div></div><div></div><div></div></div>`
+    : ordenado.map(p=>{
     const part=tA>0?(p.acum/tA)*100:0;
     return `
     <div class="fat-row">
