@@ -295,7 +295,9 @@ function calcRitmo(){
   else if(inicioMesSelec < inicioMesHoje){ diasUteisDecorridos=diasUteisMes; status='encerrado'; }
   else { diasUteisDecorridos=diasUteisEntre(primeiroDia, hoje); status='andamento'; }
 
-  const diasUteisRestantes = Math.max(0, diasUteisMes - diasUteisDecorridos);
+  // Hoje ainda está em andamento: conta como dia restante para o ritmo necessário
+  const hojeEhUtil = status==='andamento' && diasUteisEntre(hoje, hoje) > 0;
+  const diasUteisRestantes = Math.max(0, diasUteisMes - diasUteisDecorridos + (hojeEhUtil ? 1 : 0));
 
   // Semana anterior — sempre relativa à data real de hoje, independe do mês selecionado no filtro
   const segAtual = segundaFeiraDaSemana(hoje);
@@ -472,7 +474,7 @@ function renderFat(){
   const decorridosSub = r.status==='futuro' ? 'mês ainda não começou' : r.status==='encerrado' ? 'mês encerrado' : 'até hoje';
 
   const pctRitmo = metaEsperada>0 ? (tA/metaEsperada)*100 : (tA>0?999:0);
-  const ritmoSub = r.status==='encerrado' ? 'mês encerrado' : r.diasUteisRestantes>0 ? `restam ${diaUtilLabel(r.diasUteisRestantes)}` : 'sem dias úteis restantes';
+  const ritmoSub = r.status==='encerrado' ? 'mês encerrado' : r.diasUteisRestantes>0 ? `restam ${diaUtilLabel(r.diasUteisRestantes)}${r.status==='andamento'?' (com hoje)':''}` : 'sem dias úteis restantes';
 
   document.getElementById('ritmo-semana-passada').innerHTML=
     `Semana passada: <strong style="color:var(--text)">${diaUtilLabel(r.diasUteisSemanaAnterior)}</strong>`;
